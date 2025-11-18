@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import StatsCards from "./components/StatsCards";
+import GoalsManager from "./components/GoalsManager";
 import "./App.css";
 
 const App = () => {
@@ -52,6 +53,66 @@ const App = () => {
     localStorage.setItem("financialMonthlyData", JSON.stringify(monthlyData));
   }, [monthlyData]);
 
+  const addGoal = () => {
+    const colors = [
+      "#3b82f6",
+      "#f59e0b",
+      "#ec4899",
+      "#6366f1",
+      "#14b8a6",
+      "#f97316",
+    ];
+    const newGoal = {
+      id: Date.now(),
+      name: `Meta ${goals.length + 1}`,
+      color: colors[goals.length % colors.length],
+      status: "active",
+      targetAmount: 0,
+    };
+    setGoals([...goals, newGoal]);
+  };
+
+  const removeGoal = (id) => {
+    if (window.confirm("Tem certeza que deseja remover esta meta?")) {
+      setGoals(goals.filter((g) => g.id !== id));
+      const newData = monthlyData.map((month) => {
+        const { [id]: removed, ...rest } = month.values;
+        return { ...month, values: rest };
+      });
+      setMonthlyData(newData);
+    }
+  };
+
+  const updateGoalName = (id, newName) => {
+    setGoals(goals.map((g) => (g.id === id ? { ...g, name: newName } : g)));
+  };
+
+  const updateGoalStatus = (id, newStatus) => {
+    setGoals(goals.map((g) => (g.id === id ? { ...g, status: newStatus } : g)));
+  };
+
+  const updateGoalTarget = (id, target) => {
+    setGoals(
+      goals.map((g) =>
+        g.id === id ? { ...g, targetAmount: parseFloat(target) || 0 } : g
+      )
+    );
+  };
+
+  const calculateGoalTotal = (goalId) => {
+    return monthlyData.reduce(
+      (sum, month) => sum + (month.values[goalId] || 0),
+      0
+    );
+  };
+
+  const calculateGoalProgress = (goalId) => {
+    const goal = goals.find((g) => g.id === goalId);
+    if (!goal || goal.targetAmount === 0) return 0;
+    const total = calculateGoalTotal(goalId);
+    return Math.min((total / goal.targetAmount) * 100, 100);
+  };
+
   const calculateGrandTotal = () => {
     return monthlyData.reduce(
       (sum, month) =>
@@ -92,6 +153,17 @@ const App = () => {
           totalGeral={calculateGrandTotal()}
           activeGoals={goals.filter((g) => g.status === "active").length}
           monthlyAverage={calculateGrandTotal() / 12}
+        />
+
+        <GoalsManager
+          goals={goals}
+          onAddGoal={addGoal}
+          onRemoveGoal={removeGoal}
+          onUpdateGoalName={updateGoalName}
+          onUpdateGoalStatus={updateGoalStatus}
+          onUpdateGoalTarget={updateGoalTarget}
+          calculateGoalTotal={calculateGoalTotal}
+          calculateGoalProgress={calculateGoalProgress}
         />
       </div>
     </div>

@@ -1,0 +1,64 @@
+.goals-manager-container {
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.goals-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.goals-manager-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.add-goal-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #2563eb;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.add-goal-button:hover {
+  background-color: #1d4ed8;
+}
+
+.add-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.add-text {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .add-text {
+    display: inline;
+  }
+}
+
+.goals-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .goals-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

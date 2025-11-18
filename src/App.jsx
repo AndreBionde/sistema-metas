@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Header from "./components/Header";
+import StatsCards from "./components/StatsCards";
 import "./App.css";
 
 const App = () => {
@@ -51,6 +52,14 @@ const App = () => {
     localStorage.setItem("financialMonthlyData", JSON.stringify(monthlyData));
   }, [monthlyData]);
 
+  const calculateGrandTotal = () => {
+    return monthlyData.reduce(
+      (sum, month) =>
+        sum + Object.values(month.values).reduce((s, v) => s + v, 0),
+      0
+    );
+  };
+
   const resetAllData = () => {
     if (window.confirm("⚠️ Isso vai apagar TODOS os dados. Tem certeza?")) {
       localStorage.removeItem("financialGoals");
@@ -78,6 +87,12 @@ const App = () => {
     <div className="app-container">
       <div className="app-content">
         <Header onReset={resetAllData} />
+
+        <StatsCards
+          totalGeral={calculateGrandTotal()}
+          activeGoals={goals.filter((g) => g.status === "active").length}
+          monthlyAverage={calculateGrandTotal() / 12}
+        />
       </div>
     </div>
   );

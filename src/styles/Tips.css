@@ -1,0 +1,26 @@
+.tips-container {
+  margin-top: 1.5rem;
+  background-color: #eff6ff;
+  border-left: 4px solid #2563eb;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.tips-title {
+  font-size: 0.875rem;
+  color: #1e40af;
+  margin-bottom: 0.5rem;
+}
+
+.tips-list {
+  font-size: 0.875rem;
+  color: #1e40af;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  margin-left: 1rem;
+}
+
+.tips-list li {
+  margin-top: 0.25rem;
+}

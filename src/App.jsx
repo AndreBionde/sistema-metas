@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import StatsCards from "./components/StatsCards";
 import GoalsManager from "./components/GoalsManager";
+import MonthlyTable from "./components/MonthlyTable";
+import Tips from "./components/Tips";
+import PWAInstructions from "./components/PWAInstructions";
 import "./App.css";
 
 const App = () => {
@@ -99,6 +102,25 @@ const App = () => {
     );
   };
 
+  const updateValue = (monthIndex, goalId, value) => {
+    const newData = [...monthlyData];
+    newData[monthIndex].values[goalId] = parseFloat(value) || 0;
+    setMonthlyData(newData);
+  };
+
+  const updateObservation = (monthIndex, obs) => {
+    const newData = [...monthlyData];
+    newData[monthIndex].observation = obs;
+    setMonthlyData(newData);
+  };
+
+  const calculateMonthTotal = (monthIndex) => {
+    return Object.values(monthlyData[monthIndex].values).reduce(
+      (sum, val) => sum + val,
+      0
+    );
+  };
+
   const calculateGoalTotal = (goalId) => {
     return monthlyData.reduce(
       (sum, month) => sum + (month.values[goalId] || 0),
@@ -165,6 +187,19 @@ const App = () => {
           calculateGoalTotal={calculateGoalTotal}
           calculateGoalProgress={calculateGoalProgress}
         />
+
+        <MonthlyTable
+          goals={goals}
+          monthlyData={monthlyData}
+          onUpdateValue={updateValue}
+          onUpdateObservation={updateObservation}
+          calculateMonthTotal={calculateMonthTotal}
+          calculateGoalTotal={calculateGoalTotal}
+          calculateGrandTotal={calculateGrandTotal}
+        />
+
+        <Tips />
+        <PWAInstructions />
       </div>
     </div>
   );

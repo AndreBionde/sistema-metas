@@ -1,0 +1,34 @@
+.pwa-container {
+  margin-top: 1.5rem;
+  background-color: #faf5ff;
+  border-left: 4px solid #a855f7;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.pwa-title {
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: #6b21a8;
+  margin-bottom: 0.5rem;
+}
+
+.pwa-content {
+  font-size: 0.875rem;
+  color: #6b21a8;
+}
+
+.pwa-section {
+  margin-top: 0.75rem;
+}
+
+.pwa-list {
+  margin-left: 1rem;
+  margin-top: 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.pwa-list li {
+  margin-top: 0.25rem;
+}

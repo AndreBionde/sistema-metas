@@ -1,0 +1,192 @@
+.monthly-table-container {
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.monthly-table-header {
+  padding: 1.5rem;
+  background: linear-gradient(to right, #2563eb, #4f46e5);
+}
+
+.monthly-table-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.monthly-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.monthly-table thead {
+  background-color: #f3f4f6;
+}
+
+.monthly-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.th-month {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background-color: #f3f4f6;
+  z-index: 10;
+}
+
+.th-goal {
+  text-align: right;
+  min-width: 120px;
+}
+
+.th-goal-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.th-goal-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.th-goal-name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.th-total {
+  text-align: right;
+  background-color: #eff6ff;
+}
+
+.th-obs {
+  text-align: left;
+  min-width: 200px;
+}
+
+.monthly-table tbody tr {
+  background-color: white;
+}
+
+.monthly-table tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.row-empty {
+  border-left: 4px solid #fbbf24;
+}
+
+.td-month {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+}
+
+.td-even {
+  background-color: white;
+}
+
+.td-odd {
+  background-color: #f9fafb;
+}
+
+.month-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warning-icon {
+  color: #eab308;
+}
+
+.td-value {
+  padding: 0.75rem 1rem;
+}
+
+.value-input {
+  width: 100%;
+  text-align: right;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.value-input:focus {
+  border-color: #2563eb;
+}
+
+.td-month-total {
+  padding: 0.75rem 1rem;
+  text-align: right;
+  font-weight: bold;
+  color: #1d4ed8;
+  background-color: #eff6ff;
+}
+
+.td-observation {
+  padding: 0.75rem 1rem;
+}
+
+.observation-input {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.observation-input:focus {
+  border-color: #2563eb;
+}
+
+.row-total {
+  background: linear-gradient(to right, #dbeafe, #e0e7ff);
+  font-weight: bold;
+}
+
+.td-total-label {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  position: sticky;
+  left: 0;
+  background-color: #dbeafe;
+  z-index: 10;
+}
+
+.td-goal-total {
+  padding: 1rem;
+  text-align: right;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.td-grand-total {
+  padding: 1rem;
+  text-align: right;
+  font-size: 1.125rem;
+  color: #1e3a8a;
+  background-color: #dbeafe;
+}

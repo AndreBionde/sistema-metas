@@ -7,7 +7,7 @@ const Header = ({ onReset }) => {
       <div className="header-content">
         <div>
           <div className="header-title-row">
-            <Target className="header-icon" />
+            <Target className="header-icon" aria-hidden="true" />
             <h1 className="header-title">Minhas Metas Financeiras</h1>
           </div>
           <p className="header-subtitle">
@@ -15,8 +15,12 @@ const Header = ({ onReset }) => {
           </p>
           <p className="header-saved">✓ Dados salvos automaticamente</p>
         </div>
-        <button onClick={onReset} className="reset-button">
-          <RefreshCw className="reset-icon" />
+        <button
+          onClick={onReset}
+          className="reset-button"
+          aria-label="Resetar todos os dados"
+        >
+          <RefreshCw className="reset-icon" aria-hidden="true" />
           <span className="reset-text">Resetar</span>
         </button>
       </div>

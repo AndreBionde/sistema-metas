@@ -2,12 +2,34 @@
   border: 2px solid;
   border-radius: 0.5rem;
   padding: 1rem;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.goal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .goal-card-completed {
   opacity: 0.6;
   background-color: #f9fafb;
+}
+
+.goal-card-completed:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .goal-card-header {
@@ -30,8 +52,215 @@
   background-color: transparent;
   border-bottom: 1px solid transparent;
   outline: none;
-  border: none;
   color: #1f2937;
+  transition: border-color 0.2s;
+}
+
+.goal-name-input:hover {
+  border-bottom-color: #d1d5db;
+}
+
+.goal-name-input:focus {
+  border-bottom-color: #2563eb;
+}
+
+.goal-name-completed {
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+.remove-goal-button {
+  color: #ef4444;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.remove-goal-button:hover {
+  color: #b91c1c;
+  background-color: #fee2e2;
+}
+
+.remove-goal-button:active {
+  transform: scale(0.95);
+}
+
+.trash-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.status-buttons {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.status-button {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.status-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-button:active {
+  transform: translateY(0);
+}
+
+.status-icon-small {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.status-active {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-color: #93c5fd;
+}
+
+.status-paused {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.status-completed {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.status-inactive {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border-color: #d1d5db;
+}
+
+.target-amount-section {
+  margin-bottom: 0.5rem;
+}
+
+.target-label {
+  font-size: 0.75rem;
+  color: #4b5563;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.target-input {
+  width: 100%;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.target-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.progress-section {
+  margin-bottom: 0.5rem;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #4b5563;
+  margin-bottom: 0.25rem;
+}
+
+.progress-bar-container {
+  width: 100%;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  height: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 1.5rem;
+  border-radius: 9999px;
+  transition: width 0.5s ease-out;
+}
+
+.progress-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.progress-badge span {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: white;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.progress-badge-completed {
+  justify-content: center;
+}
+
+.progress-badge-almost {
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+}
+
+.goal-total {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.goal-total-completed {
+  color: #6b7280;
+}
+
+.goal-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.goal-color-dot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.goal-name-input {
+  flex: 1;
+  font-weight: 600;
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
+  outline: none;
+  color: #1f2937;
+  border: none;
 }
 
 .goal-name-input:hover {

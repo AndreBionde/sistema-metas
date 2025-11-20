@@ -24,6 +24,12 @@ const MonthlyTable = ({
     "Dez",
   ];
 
+  const handleValueChange = (monthIndex, goalId, value) => {
+    if (value === "" || parseFloat(value) >= 0) {
+      onUpdateValue(monthIndex, goalId, value);
+    }
+  };
+
   return (
     <div className="monthly-table-container">
       <div className="monthly-table-header">
@@ -34,20 +40,27 @@ const MonthlyTable = ({
         <table className="monthly-table">
           <thead>
             <tr>
-              <th className="th-month">Mês</th>
+              <th className="th-month" scope="col">
+                Mês
+              </th>
               {goals.map((goal) => (
-                <th key={goal.id} className="th-goal">
+                <th key={goal.id} className="th-goal" scope="col">
                   <div className="th-goal-content">
                     <div
                       className="th-goal-dot"
                       style={{ backgroundColor: goal.color }}
+                      aria-hidden="true"
                     ></div>
                     <span className="th-goal-name">{goal.name}</span>
                   </div>
                 </th>
               ))}
-              <th className="th-total">Total</th>
-              <th className="th-obs">Observações</th>
+              <th className="th-total" scope="col">
+                Total
+              </th>
+              <th className="th-obs" scope="col">
+                Observações
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -61,30 +74,46 @@ const MonthlyTable = ({
                   key={month.month}
                   className={`${isEmpty ? "row-empty" : ""}`}
                 >
-                  <td
+                  <th
+                    scope="row"
                     className={`td-month ${
                       idx % 2 === 0 ? "td-even" : "td-odd"
                     }`}
                   >
                     <div className="month-cell">
                       {isEmpty && (
-                        <span className="warning-icon" title="Mês sem valores">
+                        <span
+                          className="warning-icon"
+                          title="Mês sem valores"
+                          aria-label="Aviso: Mês sem valores"
+                        >
                           ⚠️
                         </span>
                       )}
                       {monthNames[idx]}
                     </div>
-                  </td>
+                  </th>
                   {goals.map((goal) => (
                     <td key={goal.id} className="td-value">
+                      <label
+                        htmlFor={`value-${idx}-${goal.id}`}
+                        className="visually-hidden"
+                      >
+                        Valor de {goal.name} em {monthNames[idx]}
+                      </label>
                       <input
+                        id={`value-${idx}-${goal.id}`}
                         type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
                         value={month.values[goal.id] || ""}
                         onChange={(e) =>
-                          onUpdateValue(idx, goal.id, e.target.value)
+                          handleValueChange(idx, goal.id, e.target.value)
                         }
                         placeholder="0.00"
                         className="value-input"
+                        aria-label={`Valor de ${goal.name} em ${monthNames[idx]}`}
                       />
                     </td>
                   ))}
@@ -92,19 +121,26 @@ const MonthlyTable = ({
                     R$ {calculateMonthTotal(idx).toFixed(2)}
                   </td>
                   <td className="td-observation">
+                    <label htmlFor={`obs-${idx}`} className="visually-hidden">
+                      Observação de {monthNames[idx]}
+                    </label>
                     <input
+                      id={`obs-${idx}`}
                       type="text"
                       value={month.observation}
                       onChange={(e) => onUpdateObservation(idx, e.target.value)}
                       placeholder="Adicione uma nota..."
                       className="observation-input"
+                      aria-label={`Observação de ${monthNames[idx]}`}
                     />
                   </td>
                 </tr>
               );
             })}
             <tr className="row-total">
-              <td className="td-total-label">TOTAL</td>
+              <th scope="row" className="td-total-label">
+                TOTAL
+              </th>
               {goals.map((goal) => (
                 <td key={goal.id} className="td-goal-total">
                   R$ {calculateGoalTotal(goal.id).toFixed(2)}

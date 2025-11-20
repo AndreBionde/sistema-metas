@@ -6,7 +6,7 @@ const PWAInstructions = () => {
       <p className="pwa-title">📱 Como instalar como aplicativo no celular:</p>
       <div className="pwa-content">
         <div className="pwa-section">
-          <strong>iPhone/iPad</strong>
+          <strong>iPhone/iPad:</strong>
           <ol className="pwa-list">
             <li>1. Abra no Safari</li>
             <li>2. Toque no ícone de compartilhar (quadrado com seta)</li>

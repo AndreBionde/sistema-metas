@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PlanoMeta">
+  <defs>
+    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56">
+      <stop offset="0%" stop-color="#0a2237" />
+      <stop offset="100%" stop-color="#147082" />
+    </linearGradient>
+    <linearGradient id="accent" x1="16" y1="44" x2="50" y2="20">
+      <stop offset="0%" stop-color="#f2be72" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#bg)" />
+  <rect x="16" y="34" width="6" height="12" rx="3" fill="rgba(255,255,255,0.18)" />
+  <rect x="27" y="28" width="6" height="18" rx="3" fill="rgba(255,255,255,0.22)" />
+  <rect x="38" y="22" width="6" height="24" rx="3" fill="rgba(255,255,255,0.26)" />
+  <path d="M16 41L27 31L35 36L48 21" fill="none" stroke="url(#accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="48" cy="21" r="7" fill="#f7fbfd" fill-opacity="0.96" />
+  <circle cx="48" cy="21" r="4" fill="#0f6b72" />
+  <circle cx="48" cy="21" r="1.7" fill="#f2be72" />
+</svg>

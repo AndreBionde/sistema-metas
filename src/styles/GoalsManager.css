@@ -1,17 +1,20 @@
 .goals-manager-container {
-  background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   animation: fadeIn 0.5s ease-out 0.4s;
   animation-fill-mode: both;
+  border: 1px solid var(--line);
+  backdrop-filter: blur(14px);
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -22,36 +25,42 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .goals-manager-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #1f2937;
+  font-size: 1.52rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.goals-manager-subtitle {
+  margin-top: 0.25rem;
+  color: var(--ink-soft);
 }
 
 .add-goal-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #2563eb;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  transition: all 0.2s;
+  background: linear-gradient(135deg, var(--navy), #164a6e);
+  color: #f8fafc;
+  padding: 0.68rem 1rem;
+  border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 700;
+  box-shadow: 0 14px 24px -20px rgba(17, 52, 79, 0.62);
 }
 
 .add-goal-button:hover {
-  background-color: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--navy-strong), #123f5f);
 }
 
 .add-goal-button:active {
-  transform: translateY(0);
+  transform: scale(0.985);
+  box-shadow: 0 10px 18px -16px rgba(17, 52, 79, 0.4);
 }
 
 .add-icon {
@@ -78,5 +87,51 @@
 @media (min-width: 768px) {
   .goals-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.goals-empty-state {
+  display: grid;
+  gap: 0.85rem;
+  justify-items: start;
+  padding: 1.3rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(236, 243, 248, 0.92));
+  color: var(--ink-soft);
+  border: 1px dashed rgba(15, 107, 114, 0.28);
+}
+
+.goals-empty-title {
+  color: var(--navy-strong);
+  font-weight: 700;
+}
+
+.goals-empty-copy {
+  max-width: 36rem;
+  line-height: 1.58;
+}
+
+@media (max-width: 640px) {
+  .goals-manager-container {
+    padding: 1rem;
+    border-radius: 1.1rem;
+  }
+
+  .goals-manager-title {
+    font-size: 1.3rem;
+  }
+
+  .goals-manager-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .add-goal-button {
+    width: 100%;
+    justify-content: center;
+    min-height: 3rem;
+  }
+
+  .goals-empty-state {
+    padding: 1rem;
   }
 }

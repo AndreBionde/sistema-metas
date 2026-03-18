@@ -1,7 +1,13 @@
 {
-  "short_name": "Metas Financeiras",
-  "name": "Gerenciador de Metas Financeiras",
+  "short_name": "PlanoMeta",
+  "name": "PlanoMeta",
   "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
@@ -20,7 +26,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#2563eb",
-  "background_color": "#ffffff",
-  "description": "Planeje e acompanhe suas metas financeiras ao longo de 12 meses"
+  "theme_color": "#11344f",
+  "background_color": "#edf4fb",
+  "description": "Planeje metas financeiras, acompanhe aportes e visualize sua evolução."
 }

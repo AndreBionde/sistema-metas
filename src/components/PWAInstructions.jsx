@@ -1,30 +1,52 @@
 import "../styles/PWAInstructions.css";
 
-const PWAInstructions = () => {
+const PWAInstructions = ({
+  canInstall,
+  installStatus,
+  onInstall,
+  pwaEnabled,
+}) => {
   return (
-    <div className="pwa-container">
-      <p className="pwa-title">📱 Como instalar como aplicativo no celular:</p>
+    <section className="pwa-container">
+      <p className="pwa-title">Uso como aplicativo</p>
+
+      {!pwaEnabled ? (
+        <p className="pwa-status">
+          O modo aplicativo está desativado nesta configuração do sistema.
+        </p>
+      ) : null}
+
+      {pwaEnabled && installStatus === "installed" ? (
+        <p className="pwa-status pwa-status-success">
+          Aplicativo instalado neste dispositivo.
+        </p>
+      ) : null}
+
+      {pwaEnabled && canInstall ? (
+        <button type="button" className="pwa-install-button" onClick={onInstall}>
+          Instalar aplicativo
+        </button>
+      ) : null}
+
       <div className="pwa-content">
         <div className="pwa-section">
-          <strong>iPhone/iPad:</strong>
+          <strong>iPhone/iPad</strong>
           <ol className="pwa-list">
-            <li>1. Abra no Safari</li>
-            <li>2. Toque no ícone de compartilhar (quadrado com seta)</li>
-            <li>3. Role e toque em "Adicionar à Tela Inicial"</li>
-            <li>4. Confirme e pronto!</li>
+            <li>Abra o sistema no Safari.</li>
+            <li>Toque no ícone de compartilhar.</li>
+            <li>Selecione "Adicionar à Tela Inicial".</li>
           </ol>
         </div>
         <div className="pwa-section">
-          <strong>Android:</strong>
+          <strong>Android</strong>
           <ol className="pwa-list">
-            <li>1. Abra no Chrome</li>
-            <li>2. Toque nos 3 pontinhos (menu)</li>
-            <li>3. Toque em "Adicionar à tela inicial" ou "Instalar app"</li>
-            <li>4. Confirme e pronto!</li>
+            <li>Abra o sistema no Chrome.</li>
+            <li>Use o menu do navegador.</li>
+            <li>Selecione "Instalar app" ou "Adicionar à tela inicial".</li>
           </ol>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

@@ -1,0 +1,226 @@
+.insights-panel {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 960px) {
+  .insights-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.insights-card {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  padding: 1.2rem 1.4rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+  min-height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.insights-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 44px -34px rgba(8, 24, 39, 0.24);
+}
+
+.insights-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.insights-kicker {
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.insights-title {
+  margin-top: 0.25rem;
+  color: var(--ink);
+}
+
+.insights-caption {
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.insights-bars {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.6rem;
+  align-items: end;
+  min-height: 15rem;
+}
+
+.insights-bar-column {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.insights-bar-track {
+  width: 100%;
+  min-height: 10rem;
+  display: flex;
+  align-items: end;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(15, 107, 114, 0.08), rgba(16, 33, 49, 0.12));
+  overflow: hidden;
+}
+
+.insights-bar-fill {
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #1a8b93, #103a56);
+}
+
+.insights-bar-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.insights-bar-value {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.insights-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.8rem;
+}
+
+.insights-metrics div {
+  padding: 0.88rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  border: 1px solid rgba(16, 33, 49, 0.06);
+}
+
+.insights-metrics span,
+.insights-goal-row span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+.insights-metrics strong,
+.insights-goal-row strong {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--ink);
+}
+
+.insights-goal-list {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.insights-goal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 0.98rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(15, 107, 114, 0.1), rgba(255, 255, 255, 0.86));
+  border: 1px solid rgba(15, 107, 114, 0.14);
+}
+
+.insights-goal-row p {
+  color: var(--navy-strong);
+  font-weight: 700;
+}
+
+.insights-empty {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .insights-card {
+    padding: 1rem;
+    border-radius: 1.1rem;
+  }
+
+  .insights-header {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .insights-caption {
+    text-align: left;
+  }
+
+  .insights-bars {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.9rem 0.45rem;
+    min-height: auto;
+    align-items: stretch;
+  }
+
+  .insights-bar-track {
+    min-height: 6.8rem;
+    width: 100%;
+  }
+
+  .insights-metrics {
+    grid-template-columns: 1fr;
+  }
+
+   .insights-metrics div {
+    padding: 0.82rem 0.88rem;
+  }
+
+  .insights-goal-row {
+    display: grid;
+    gap: 0.3rem;
+    justify-content: start;
+    padding: 0.82rem 0.88rem;
+  }
+
+  .insights-bar-label {
+    font-size: 0.72rem;
+  }
+
+  .insights-bar-value {
+    font-size: 0.67rem;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 420px) {
+  .insights-bars {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem 0.42rem;
+  }
+
+  .insights-bar-track {
+    min-height: 5.8rem;
+  }
+
+  .insights-title {
+    font-size: 1.42rem;
+    line-height: 1.08;
+  }
+}

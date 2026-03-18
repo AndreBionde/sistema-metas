@@ -4,17 +4,15 @@ const Tips = () => {
   return (
     <div className="tips-container">
       <p className="tips-title">
-        💡 <strong>Dicas:</strong>
+        <strong>Boas práticas:</strong>
       </p>
       <ul className="tips-list">
-        <li>• Clique nos nomes das metas para editá-los</li>
-        <li>• Defina uma meta de valor para ver o progresso em porcentagem</li>
-        <li>
-          • Use os status para organizar suas metas (Ativa, Pausada, Concluída)
-        </li>
-        <li>• Seus dados são salvos automaticamente no navegador</li>
-        <li>• Meses vazios aparecem com ⚠️ amarelo</li>
-        <li>• Metas concluídas ficam com visual diferenciado</li>
+        <li>Renomeie as metas para refletir objetivos reais.</li>
+        <li>Defina uma meta de valor para acompanhar percentual de conclusão.</li>
+        <li>Planeje um aporte mensal para facilitar projeções de conclusão.</li>
+        <li>Gere relatórios antes de compartilhar seu planejamento com outras pessoas.</li>
+        <li>Use observações mensais para registrar contextos importantes.</li>
+        <li>Crie um novo ano ao iniciar um novo ciclo de planejamento.</li>
       </ul>
     </div>
   );

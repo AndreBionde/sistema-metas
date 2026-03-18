@@ -1,26 +1,37 @@
-import { Trash2, Clock, Pause, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Clock, Pause, Trash2 } from "lucide-react";
+import { GOAL_CATEGORIES } from "../constants/defaultData";
+import {
+  formatCurrency,
+  formatMonthProjection,
+  formatPercent,
+} from "../utils/formatters";
 import "../styles/GoalCard.css";
 
 const GoalCard = ({
   goal,
   total,
   progress,
+  projectedMonths,
   onRemove,
   onUpdateName,
+  onCommitName,
+  onUpdateCategory,
   onUpdateStatus,
   onUpdateTarget,
+  onUpdatePlannedAmount,
 }) => {
   const isCompleted = goal.status === "completed";
 
-  const handleTargetChange = (e) => {
-    const value = e.target.value;
-    if (value === "" || parseFloat(value) >= 0) {
-      onUpdateTarget(goal.id, value);
+  const handleNumericChange = (callback) => (event) => {
+    const nextValue = event.target.value;
+
+    if (nextValue === "" || parseFloat(nextValue) >= 0) {
+      callback(goal.id, nextValue);
     }
   };
 
   return (
-    <div
+    <article
       className={`goal-card ${isCompleted ? "goal-card-completed" : ""}`}
       style={{ borderColor: goal.color }}
     >
@@ -33,21 +44,53 @@ const GoalCard = ({
         <input
           id={`goal-name-${goal.id}`}
           type="text"
+          maxLength={80}
           value={goal.name}
-          onChange={(e) => onUpdateName(goal.id, e.target.value)}
+          onChange={(event) => onUpdateName(goal.id, event.target.value)}
+          onBlur={() => onCommitName(goal.id)}
           className={`goal-name-input ${
             isCompleted ? "goal-name-completed" : ""
           }`}
-          aria-label={`Nome da meta: ${goal.name}`}
+          aria-label={`Nome da meta ${goal.name}`}
         />
         <button
-          onClick={() => onRemove(goal.id)}
-          className="remove-goal-button"
-          aria-label={`Remover meta ${goal.name}`}
           type="button"
+          className="remove-goal-button"
+          onClick={() => onRemove(goal.id)}
+          aria-label={`Remover meta ${goal.name}`}
         >
           <Trash2 className="trash-icon" aria-hidden="true" />
         </button>
+      </div>
+
+      <div className="goal-meta-grid">
+        <label className="goal-meta-field">
+          <span>Categoria</span>
+          <select
+            value={goal.category}
+            onChange={(event) => onUpdateCategory(goal.id, event.target.value)}
+          >
+            {GOAL_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="goal-meta-field">
+          <span>Aporte mensal planejado</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            value={goal.plannedMonthlyAmount || ""}
+            onChange={handleNumericChange(onUpdatePlannedAmount)}
+            placeholder="Ex: 400"
+            className="target-input"
+          />
+        </label>
       </div>
 
       <div className="status-buttons" role="group" aria-label="Status da meta">
@@ -58,9 +101,9 @@ const GoalCard = ({
             goal.status === "active" ? "status-active" : "status-inactive"
           }`}
           aria-pressed={goal.status === "active"}
-          aria-label="Marcar meta como ativa"
         >
-          <Clock className="status-icon-small" aria-hidden="true" /> Ativa
+          <Clock className="status-icon-small" aria-hidden="true" />
+          Ativa
         </button>
         <button
           type="button"
@@ -69,9 +112,9 @@ const GoalCard = ({
             goal.status === "paused" ? "status-paused" : "status-inactive"
           }`}
           aria-pressed={goal.status === "paused"}
-          aria-label="Marcar meta como pausada"
         >
-          <Pause className="status-icon-small" aria-hidden="true" /> Pausada
+          <Pause className="status-icon-small" aria-hidden="true" />
+          Pausada
         </button>
         <button
           type="button"
@@ -80,16 +123,15 @@ const GoalCard = ({
             goal.status === "completed" ? "status-completed" : "status-inactive"
           }`}
           aria-pressed={goal.status === "completed"}
-          aria-label="Marcar meta como concluída"
         >
-          <CheckCircle2 className="status-icon-small" aria-hidden="true" />{" "}
+          <CheckCircle2 className="status-icon-small" aria-hidden="true" />
           Concluída
         </button>
       </div>
 
       <div className="target-amount-section">
         <label htmlFor={`target-${goal.id}`} className="target-label">
-          Meta de valor (opcional):
+          Meta de valor
         </label>
         <input
           id={`target-${goal.id}`}
@@ -98,19 +140,18 @@ const GoalCard = ({
           step="0.01"
           inputMode="decimal"
           value={goal.targetAmount || ""}
-          onChange={handleTargetChange}
+          onChange={handleNumericChange(onUpdateTarget)}
           placeholder="Ex: 5000.00"
           className="target-input"
-          aria-label={`Meta de valor para ${goal.name}`}
         />
       </div>
 
-      {goal.targetAmount > 0 && (
+      {goal.targetAmount > 0 ? (
         <div className="progress-section">
           <div className="progress-info">
-            <span>Progresso: {progress.toFixed(1)}%</span>
+            <span>Progresso: {formatPercent(progress)}</span>
             <span>
-              R$ {total.toFixed(2)} / R$ {goal.targetAmount.toFixed(2)}
+              {formatCurrency(total)} / {formatCurrency(goal.targetAmount)}
             </span>
           </div>
           <div
@@ -119,9 +160,7 @@ const GoalCard = ({
             aria-valuenow={progress}
             aria-valuemin="0"
             aria-valuemax="100"
-            aria-label={`Progresso da meta ${goal.name}: ${progress.toFixed(
-              1
-            )}%`}
+            aria-label={`Progresso da meta ${goal.name}`}
           >
             <div
               className="progress-bar-fill"
@@ -130,24 +169,29 @@ const GoalCard = ({
                 backgroundColor: goal.color,
               }}
             ></div>
-            {progress >= 100 && (
+            {progress >= 100 ? (
               <div className="progress-badge progress-badge-completed">
-                <span>🎉 Meta atingida!</span>
+                <span>Meta atingida</span>
               </div>
-            )}
-            {progress >= 80 && progress < 100 && (
+            ) : null}
+            {progress >= 80 && progress < 100 ? (
               <div className="progress-badge progress-badge-almost">
-                <span>⚡ Quase lá!</span>
+                <span>Quase lá</span>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
-      )}
+      ) : null}
 
-      <p className={`goal-total ${isCompleted ? "goal-total-completed" : ""}`}>
-        Acumulado: R$ {total.toFixed(2)}
-      </p>
-    </div>
+      <div className="goal-footer">
+        <p className={`goal-total ${isCompleted ? "goal-total-completed" : ""}`}>
+          Acumulado: {formatCurrency(total)}
+        </p>
+        <p className="goal-projection">
+          Projeção: {formatMonthProjection(projectedMonths)}
+        </p>
+      </div>
+    </article>
   );
 };
 

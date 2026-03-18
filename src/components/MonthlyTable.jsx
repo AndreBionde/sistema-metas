@@ -1,3 +1,5 @@
+import { MONTH_NAMES } from "../constants/defaultData";
+import { formatCurrency } from "../utils/formatters";
 import "../styles/MonthlyTable.css";
 
 const MonthlyTable = ({
@@ -9,31 +11,21 @@ const MonthlyTable = ({
   calculateGoalTotal,
   calculateGrandTotal,
 }) => {
-  const monthNames = [
-    "Jan",
-    "Fev",
-    "Mar",
-    "Abr",
-    "Mai",
-    "Jun",
-    "Jul",
-    "Ago",
-    "Set",
-    "Out",
-    "Nov",
-    "Dez",
-  ];
-
-  const handleValueChange = (monthIndex, goalId, value) => {
-    if (value === "" || parseFloat(value) >= 0) {
-      onUpdateValue(monthIndex, goalId, value);
+  const handleValueChange = (monthIndex, goalId, nextValue) => {
+    if (nextValue === "" || parseFloat(nextValue) >= 0) {
+      onUpdateValue(monthIndex, goalId, nextValue);
     }
   };
 
   return (
-    <div className="monthly-table-container">
+    <section className="monthly-table-container">
       <div className="monthly-table-header">
-        <h2 className="monthly-table-title">Planejamento Mensal</h2>
+        <div>
+          <h2 className="monthly-table-title">Planejamento mensal</h2>
+          <p className="monthly-table-subtitle">
+            Registre o realizado por mês e acompanhe observações relevantes.
+          </p>
+        </div>
       </div>
 
       <div className="table-wrapper">
@@ -51,7 +43,10 @@ const MonthlyTable = ({
                       style={{ backgroundColor: goal.color }}
                       aria-hidden="true"
                     ></div>
-                    <span className="th-goal-name">{goal.name}</span>
+                    <div>
+                      <span className="th-goal-name">{goal.name}</span>
+                      <small>{goal.category}</small>
+                    </div>
                   </div>
                 </th>
               ))}
@@ -64,74 +59,69 @@ const MonthlyTable = ({
             </tr>
           </thead>
           <tbody>
-            {monthlyData.map((month, idx) => {
+            {monthlyData.map((month, index) => {
               const isEmpty = Object.values(month.values).every(
-                (v) => !v || v === 0
+                (value) => !value || value === 0
               );
 
               return (
-                <tr
-                  key={month.month}
-                  className={`${isEmpty ? "row-empty" : ""}`}
-                >
+                <tr key={month.month} className={isEmpty ? "row-empty" : ""}>
                   <th
                     scope="row"
-                    className={`td-month ${
-                      idx % 2 === 0 ? "td-even" : "td-odd"
-                    }`}
+                    className={`td-month ${index % 2 === 0 ? "td-even" : "td-odd"}`}
                   >
                     <div className="month-cell">
-                      {isEmpty && (
+                      {isEmpty ? (
                         <span
                           className="warning-icon"
                           title="Mês sem valores"
-                          aria-label="Aviso: Mês sem valores"
+                          aria-label="Mês sem valores"
                         >
-                          ⚠️
+                          !
                         </span>
-                      )}
-                      {monthNames[idx]}
+                      ) : null}
+                      {MONTH_NAMES[index]}
                     </div>
                   </th>
                   {goals.map((goal) => (
                     <td key={goal.id} className="td-value">
                       <label
-                        htmlFor={`value-${idx}-${goal.id}`}
+                        htmlFor={`value-${index}-${goal.id}`}
                         className="visually-hidden"
                       >
-                        Valor de {goal.name} em {monthNames[idx]}
+                        Valor de {goal.name} em {MONTH_NAMES[index]}
                       </label>
                       <input
-                        id={`value-${idx}-${goal.id}`}
+                        id={`value-${index}-${goal.id}`}
                         type="number"
                         min="0"
                         step="0.01"
                         inputMode="decimal"
-                        value={month.values[goal.id] || ""}
-                        onChange={(e) =>
-                          handleValueChange(idx, goal.id, e.target.value)
+                        value={month.values[goal.id] ?? ""}
+                        onChange={(event) =>
+                          handleValueChange(index, goal.id, event.target.value)
                         }
                         placeholder="0.00"
                         className="value-input"
-                        aria-label={`Valor de ${goal.name} em ${monthNames[idx]}`}
                       />
                     </td>
                   ))}
                   <td className="td-month-total">
-                    R$ {calculateMonthTotal(idx).toFixed(2)}
+                    {formatCurrency(calculateMonthTotal(index))}
                   </td>
                   <td className="td-observation">
-                    <label htmlFor={`obs-${idx}`} className="visually-hidden">
-                      Observação de {monthNames[idx]}
+                    <label htmlFor={`obs-${index}`} className="visually-hidden">
+                      Observação de {MONTH_NAMES[index]}
                     </label>
                     <input
-                      id={`obs-${idx}`}
+                      id={`obs-${index}`}
                       type="text"
                       value={month.observation}
-                      onChange={(e) => onUpdateObservation(idx, e.target.value)}
+                      onChange={(event) =>
+                        onUpdateObservation(index, event.target.value)
+                      }
                       placeholder="Adicione uma nota..."
                       className="observation-input"
-                      aria-label={`Observação de ${monthNames[idx]}`}
                     />
                   </td>
                 </tr>
@@ -143,18 +133,18 @@ const MonthlyTable = ({
               </th>
               {goals.map((goal) => (
                 <td key={goal.id} className="td-goal-total">
-                  R$ {calculateGoalTotal(goal.id).toFixed(2)}
+                  {formatCurrency(calculateGoalTotal(goal.id))}
                 </td>
               ))}
               <td className="td-grand-total">
-                R$ {calculateGrandTotal().toFixed(2)}
+                {formatCurrency(calculateGrandTotal())}
               </td>
               <td></td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 };
 

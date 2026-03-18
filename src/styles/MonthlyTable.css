@@ -1,23 +1,31 @@
 .monthly-table-container {
-  background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
+  border: 1px solid var(--line);
+  backdrop-filter: blur(14px);
 }
 
 .monthly-table-header {
   padding: 1.5rem;
-  background: linear-gradient(to right, #2563eb, #4f46e5);
+  background: linear-gradient(135deg, #0d314c, #147082);
 }
 
 .monthly-table-title {
   font-size: 1.5rem;
-  font-weight: bold;
-  color: white;
+  font-weight: 700;
+  color: #f7fbfd;
+}
+
+.monthly-table-subtitle {
+  margin-top: 0.35rem;
+  color: rgba(247, 251, 253, 0.76);
 }
 
 .table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .monthly-table {
@@ -26,21 +34,22 @@
 }
 
 .monthly-table thead {
-  background-color: #f3f4f6;
+  background-color: rgba(16, 33, 49, 0.05);
 }
 
 .monthly-table th {
-  padding: 0.75rem 1rem;
+  padding: 0.78rem 1rem;
   font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
 }
 
 .th-month {
   text-align: left;
   position: sticky;
   left: 0;
-  background-color: #f3f4f6;
+  background-color: rgba(16, 33, 49, 0.05);
   z-index: 10;
 }
 
@@ -66,11 +75,18 @@
 .th-goal-name {
   text-overflow: ellipsis;
   overflow: hidden;
+  display: block;
+}
+
+.th-goal-content small {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 0.72rem;
 }
 
 .th-total {
   text-align: right;
-  background-color: #eff6ff;
+  background-color: rgba(17, 52, 79, 0.08);
 }
 
 .th-obs {
@@ -79,33 +95,37 @@
 }
 
 .monthly-table tbody tr {
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.58);
 }
 
 .monthly-table tbody tr:nth-child(even) {
-  background-color: #f9fafb;
+  background-color: rgba(16, 33, 49, 0.025);
+}
+
+.monthly-table tbody tr:hover {
+  background-color: rgba(15, 107, 114, 0.045);
 }
 
 .row-empty {
-  border-left: 4px solid #fbbf24;
+  border-left: 4px solid var(--sand);
 }
 
 .td-month {
-  padding: 0.75rem 1rem;
+  padding: 0.78rem 1rem;
   font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 700;
+  color: var(--ink);
   position: sticky;
   left: 0;
   z-index: 10;
 }
 
 .td-even {
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.62);
 }
 
 .td-odd {
-  background-color: #f9fafb;
+  background-color: rgba(16, 33, 49, 0.025);
 }
 
 .month-cell {
@@ -115,7 +135,7 @@
 }
 
 .warning-icon {
-  color: #eab308;
+  color: var(--sand);
 }
 
 .td-value {
@@ -125,23 +145,26 @@
 .value-input {
   width: 100%;
   text-align: right;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  padding: 0.48rem 0.62rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.6rem;
   font-size: 0.875rem;
   outline: none;
+  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  color: var(--ink);
 }
 
 .value-input:focus {
-  border-color: #2563eb;
+  border-color: rgba(15, 107, 114, 0.34);
+  box-shadow: 0 0 0 3px rgba(15, 107, 114, 0.07);
 }
 
 .td-month-total {
   padding: 0.75rem 1rem;
   text-align: right;
-  font-weight: bold;
-  color: #1d4ed8;
-  background-color: #eff6ff;
+  font-weight: 700;
+  color: var(--navy);
+  background-color: rgba(17, 52, 79, 0.08);
 }
 
 .td-observation {
@@ -150,29 +173,32 @@
 
 .observation-input {
   width: 100%;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  padding: 0.48rem 0.62rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.6rem;
   font-size: 0.875rem;
   outline: none;
+  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  color: var(--ink);
 }
 
 .observation-input:focus {
-  border-color: #2563eb;
+  border-color: rgba(15, 107, 114, 0.34);
+  box-shadow: 0 0 0 3px rgba(15, 107, 114, 0.07);
 }
 
 .row-total {
-  background: linear-gradient(to right, #dbeafe, #e0e7ff);
-  font-weight: bold;
+  background: linear-gradient(to right, rgba(17, 52, 79, 0.12), rgba(15, 107, 114, 0.08));
+  font-weight: 700;
 }
 
 .td-total-label {
   padding: 1rem;
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--ink);
   position: sticky;
   left: 0;
-  background-color: #dbeafe;
+  background-color: rgba(17, 52, 79, 0.12);
   z-index: 10;
 }
 
@@ -180,13 +206,56 @@
   padding: 1rem;
   text-align: right;
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--ink);
 }
 
 .td-grand-total {
   padding: 1rem;
   text-align: right;
   font-size: 1.125rem;
-  color: #1e3a8a;
-  background-color: #dbeafe;
+  color: var(--navy-strong);
+  background-color: rgba(17, 52, 79, 0.12);
+}
+
+@media (max-width: 640px) {
+  .monthly-table-container {
+    border-radius: 1.1rem;
+  }
+
+  .monthly-table-header {
+    padding: 1rem;
+  }
+
+  .monthly-table-title {
+    font-size: 1.28rem;
+  }
+
+  .monthly-table-subtitle {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .monthly-table th,
+  .td-month,
+  .td-value,
+  .td-month-total,
+  .td-observation,
+  .td-total-label,
+  .td-goal-total,
+  .td-grand-total {
+    padding: 0.68rem 0.72rem;
+  }
+
+  .th-goal {
+    min-width: 108px;
+  }
+
+  .th-obs {
+    min-width: 180px;
+  }
+
+  .value-input,
+  .observation-input {
+    font-size: 0.83rem;
+  }
 }

@@ -39,8 +39,10 @@ if (isFirebaseConfigured) {
 }
 
 const provider = new GoogleAuthProvider();
-// Evita forçar a seleção de conta em todos os logins.
-provider.setCustomParameters({});
+// Força o seletor de conta para atender usuários com múltiplos logins Google.
+provider.setCustomParameters({
+  prompt: "select_account",
+});
 
 const authPreparationPromise = authInstance
   ? setPersistence(authInstance, browserSessionPersistence).catch(() => undefined)

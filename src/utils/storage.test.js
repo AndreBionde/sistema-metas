@@ -1,4 +1,9 @@
-import { createAppStateSignature, normalizeAppState } from "./storage";
+import {
+  createAppStateSignature,
+  mergeAppStates,
+  normalizeAppState,
+  parseImportedAppState,
+} from "./storage";
 
 describe("storage utils", () => {
   it("returns a default state when no payload is provided", () => {
@@ -106,5 +111,92 @@ describe("storage utils", () => {
     expect(createAppStateSignature(normalizedState)).toBe(
       createAppStateSignature(normalizedState)
     );
+  });
+
+  it("parses a backup json payload into a normalized state", () => {
+    const parsedState = parseImportedAppState(
+      JSON.stringify({
+        currentYear: "2026",
+        years: {
+          2026: {
+            goals: [{ id: 1, name: "Backup", category: "Reserva" }],
+            monthlyData: [{ month: 1, values: { 1: 100 }, observation: "ok" }],
+          },
+        },
+      })
+    );
+
+    expect(parsedState.currentYear).toBe("2026");
+    expect(parsedState.years["2026"].goals[0].name).toBe("Backup");
+  });
+
+  it("merges divergent local and remote states without losing independent changes", () => {
+    const baseState = normalizeAppState({
+      currentYear: "2026",
+      years: {
+        2026: {
+          goals: [
+            {
+              id: 1,
+              name: "Reserva",
+              category: "Reserva",
+              targetAmount: 1000,
+              plannedMonthlyAmount: 100,
+              status: "active",
+            },
+          ],
+          monthlyData: [{ month: 1, values: { 1: 200 }, observation: "" }],
+        },
+      },
+    });
+
+    const remoteState = normalizeAppState({
+      currentYear: "2026",
+      years: {
+        2026: {
+          goals: [
+            {
+              id: 1,
+              name: "Reserva",
+              category: "Reserva",
+              targetAmount: 1000,
+              plannedMonthlyAmount: 100,
+              status: "paused",
+            },
+          ],
+          monthlyData: [{ month: 1, values: { 1: 200 }, observation: "Remoto" }],
+        },
+      },
+    });
+
+    const localState = normalizeAppState({
+      currentYear: "2026",
+      years: {
+        2026: {
+          goals: [
+            {
+              id: 1,
+              name: "Reserva reforçada",
+              category: "Reserva",
+              targetAmount: 1200,
+              plannedMonthlyAmount: 100,
+              status: "active",
+            },
+          ],
+          monthlyData: [{ month: 1, values: { 1: 350 }, observation: "" }],
+        },
+      },
+    });
+
+    const mergeResult = mergeAppStates({
+      baseState,
+      remoteState,
+      localState,
+    });
+
+    expect(mergeResult.state.years["2026"].goals[0].name).toBe("Reserva reforçada");
+    expect(mergeResult.state.years["2026"].goals[0].status).toBe("paused");
+    expect(mergeResult.state.years["2026"].monthlyData[0].values[1]).toBe(350);
+    expect(mergeResult.state.years["2026"].monthlyData[0].observation).toBe("Remoto");
   });
 });

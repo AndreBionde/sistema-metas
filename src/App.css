@@ -17,6 +17,24 @@
   overflow-x: clip;
 }
 
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 12;
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  background: var(--navy-strong);
+  color: #f7fbfd;
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+  transition: top 0.18s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
 .app-container::before,
 .app-container::after {
   content: "";

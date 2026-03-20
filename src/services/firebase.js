@@ -3,19 +3,24 @@ import {
   GoogleAuthProvider,
   browserSessionPersistence,
   getAuth,
+  onAuthStateChanged,
   setPersistence,
   signInWithPopup,
   signOut,
 } from "firebase/auth";
+import { getToken, initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import {
   doc,
   getDoc,
   getFirestore,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
-  setDoc,
 } from "firebase/firestore";
-import { createAppStateSignature, normalizeAppState } from "../utils/storage";
+import {
+  createAppStateSignature,
+  normalizeAppState,
+} from "../utils/storage";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -26,20 +31,39 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
-export const isFirebaseConfigured = Object.values(firebaseConfig).every(Boolean);
+const appCheckSiteKey = process.env.REACT_APP_FIREBASE_APP_CHECK_KEY;
+const useMockServices = process.env.REACT_APP_USE_MOCK_SERVICES === "true";
+
+export const isFirebaseConfigured =
+  useMockServices || Object.values(firebaseConfig).every(Boolean);
 
 let appInstance = null;
 let authInstance = null;
 let firestoreInstance = null;
+let appCheckInstance = null;
 
-if (isFirebaseConfigured) {
+if (!useMockServices && isFirebaseConfigured) {
   appInstance = initializeApp(firebaseConfig);
   authInstance = getAuth(appInstance);
   firestoreInstance = getFirestore(appInstance);
+
+  if (
+    typeof window !== "undefined" &&
+    process.env.NODE_ENV === "production" &&
+    appCheckSiteKey
+  ) {
+    try {
+      appCheckInstance = initializeAppCheck(appInstance, {
+        provider: new ReCaptchaV3Provider(appCheckSiteKey),
+        isTokenAutoRefreshEnabled: true,
+      });
+    } catch (error) {
+      console.warn("[security] app check init failed", error);
+    }
+  }
 }
 
 const provider = new GoogleAuthProvider();
-// Força o seletor de conta para atender usuários com múltiplos logins Google.
 provider.setCustomParameters({
   prompt: "select_account",
 });
@@ -50,12 +74,213 @@ const authPreparationPromise = authInstance
 
 const getCloudPlanReference = (userId) =>
   doc(firestoreInstance, "users", userId, "plans", "default");
+const getPublicStatsReference = () =>
+  doc(firestoreInstance, "publicStats", "overview");
+
+const DEFAULT_PUBLIC_STATS = {
+  goalsCreated: 0,
+  plansStarted: 0,
+  reportsGenerated: 0,
+  activeYearsCreated: 0,
+};
+
+const normalizeCloudDocument = (documentData = {}) => {
+  const nextState = normalizeAppState(documentData);
+  return {
+    state: nextState,
+    signature: createAppStateSignature(nextState),
+    revision: Number.isFinite(Number(documentData?.revision))
+      ? Number(documentData.revision)
+      : 0,
+    updatedAtClient:
+      typeof documentData?.updatedAtClient === "string"
+        ? documentData.updatedAtClient
+        : "",
+    updatedBySessionId:
+      typeof documentData?.updatedBySessionId === "string"
+        ? documentData.updatedBySessionId
+        : "",
+  };
+};
+
+const createConflictError = (documentData) => {
+  const normalizedDocument = normalizeCloudDocument(documentData);
+  const conflictError = new Error("Cloud plan conflict");
+  conflictError.code = "cloud/conflict";
+  conflictError.remoteState = normalizedDocument.state;
+  conflictError.remoteSignature = normalizedDocument.signature;
+  conflictError.remoteRevision = normalizedDocument.revision;
+  conflictError.remoteUpdatedAtClient = normalizedDocument.updatedAtClient;
+  conflictError.remoteUpdatedBySessionId = normalizedDocument.updatedBySessionId;
+  return conflictError;
+};
+
+const buildCloudPayload = (appState, revision, sessionId) => ({
+  ...normalizeAppState(appState),
+  revision,
+  updatedAt: serverTimestamp(),
+  updatedAtClient: new Date().toISOString(),
+  updatedBySessionId: sessionId || "",
+});
+
+const MOCK_AUTH_KEY = "planometa.mock.auth";
+const MOCK_PLAN_PREFIX = "planometa.mock.plan.";
+const MOCK_PUBLIC_STATS_KEY = "planometa.mock.public-stats";
+const mockAuthListeners = new Set();
+const mockPlanListeners = new Map();
+let mockCurrentUserCache;
+
+const isBrowser = typeof window !== "undefined";
+
+const readMockUser = () => {
+  if (!isBrowser) {
+    return null;
+  }
+
+  if (mockCurrentUserCache !== undefined) {
+    return mockCurrentUserCache;
+  }
+
+  try {
+    const serializedUser = window.localStorage.getItem(MOCK_AUTH_KEY);
+    mockCurrentUserCache = serializedUser ? JSON.parse(serializedUser) : null;
+  } catch {
+    mockCurrentUserCache = null;
+  }
+
+  return mockCurrentUserCache;
+};
+
+const writeMockUser = (nextUser) => {
+  if (!isBrowser) {
+    return;
+  }
+
+  mockCurrentUserCache = nextUser;
+
+  if (nextUser) {
+    window.localStorage.setItem(MOCK_AUTH_KEY, JSON.stringify(nextUser));
+  } else {
+    window.localStorage.removeItem(MOCK_AUTH_KEY);
+  }
+};
+
+const readMockPlanDocument = (userId) => {
+  if (!isBrowser) {
+    return null;
+  }
+
+  try {
+    const serializedPlan = window.localStorage.getItem(`${MOCK_PLAN_PREFIX}${userId}`);
+    return serializedPlan ? JSON.parse(serializedPlan) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeMockPlanDocument = (userId, documentData) => {
+  if (!isBrowser) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    `${MOCK_PLAN_PREFIX}${userId}`,
+    JSON.stringify(documentData)
+  );
+};
+
+const notifyMockPlanListeners = (userId) => {
+  const handlers = mockPlanListeners.get(userId) || new Set();
+  const documentData = readMockPlanDocument(userId);
+
+  handlers.forEach((handlersEntry) => {
+    if (!documentData) {
+      handlersEntry?.onMissing?.();
+      return;
+    }
+
+    handlersEntry?.onData?.(normalizeCloudDocument(documentData));
+  });
+};
+
+const readMockPublicStats = () => {
+  if (!isBrowser) {
+    return DEFAULT_PUBLIC_STATS;
+  }
+
+  try {
+    const serializedStats = window.localStorage.getItem(MOCK_PUBLIC_STATS_KEY);
+    return serializedStats
+      ? { ...DEFAULT_PUBLIC_STATS, ...JSON.parse(serializedStats) }
+      : DEFAULT_PUBLIC_STATS;
+  } catch {
+    return DEFAULT_PUBLIC_STATS;
+  }
+};
+
+const writeMockPublicStats = (nextStats) => {
+  if (!isBrowser) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    MOCK_PUBLIC_STATS_KEY,
+    JSON.stringify({ ...DEFAULT_PUBLIC_STATS, ...nextStats })
+  );
+};
 
 export const auth = authInstance;
 
-export const prepareAuthSession = () => authPreparationPromise;
+export const getCurrentUser = () =>
+  useMockServices ? readMockUser() : authInstance?.currentUser || null;
+
+export const subscribeToAuthState = (callback) => {
+  if (useMockServices) {
+    callback(readMockUser());
+    mockAuthListeners.add(callback);
+    return () => mockAuthListeners.delete(callback);
+  }
+
+  if (!authInstance) {
+    callback(null);
+    return () => undefined;
+  }
+
+  return onAuthStateChanged(authInstance, callback);
+};
+
+export const prepareAuthSession = async () => {
+  if (useMockServices) {
+    return undefined;
+  }
+
+  await authPreparationPromise;
+
+  if (appCheckInstance) {
+    try {
+      await getToken(appCheckInstance, false);
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
+};
 
 export const signInWithGoogle = async () => {
+  if (useMockServices) {
+    const nextUser = {
+      uid: "mock-user",
+      displayName: "Usuário de Teste",
+      email: "teste@planometa.local",
+    };
+
+    await new Promise((resolve) => window.setTimeout(resolve, 180));
+    writeMockUser(nextUser);
+    mockAuthListeners.forEach((listener) => listener(nextUser));
+    return { user: nextUser };
+  }
+
   if (!authInstance) {
     throw new Error("Firebase não configurado.");
   }
@@ -65,6 +290,12 @@ export const signInWithGoogle = async () => {
 };
 
 export const signOutUser = async () => {
+  if (useMockServices) {
+    writeMockUser(null);
+    mockAuthListeners.forEach((listener) => listener(null));
+    return;
+  }
+
   if (!authInstance) {
     return;
   }
@@ -73,25 +304,88 @@ export const signOutUser = async () => {
 };
 
 export const getCloudPlanOnce = async (userId) => {
+  if (useMockServices) {
+    const documentData = readMockPlanDocument(userId);
+
+    if (!documentData) {
+      return { exists: false, state: null, signature: "", revision: 0 };
+    }
+
+    return {
+      exists: true,
+      ...normalizeCloudDocument(documentData),
+    };
+  }
+
   if (!firestoreInstance) {
-    return { exists: false, state: null, signature: "" };
+    return { exists: false, state: null, signature: "", revision: 0 };
   }
 
   const documentSnapshot = await getDoc(getCloudPlanReference(userId));
 
   if (!documentSnapshot.exists()) {
-    return { exists: false, state: null, signature: "" };
+    return { exists: false, state: null, signature: "", revision: 0 };
   }
 
-  const nextState = normalizeAppState(documentSnapshot.data());
   return {
     exists: true,
-    state: nextState,
-    signature: createAppStateSignature(nextState),
+    ...normalizeCloudDocument(documentSnapshot.data()),
+  };
+};
+
+export const getPublicStatsOnce = async () => {
+  if (useMockServices) {
+    return readMockPublicStats();
+  }
+
+  if (!firestoreInstance) {
+    return DEFAULT_PUBLIC_STATS;
+  }
+
+  const documentSnapshot = await getDoc(getPublicStatsReference());
+
+  if (!documentSnapshot.exists()) {
+    return DEFAULT_PUBLIC_STATS;
+  }
+
+  return {
+    ...DEFAULT_PUBLIC_STATS,
+    ...documentSnapshot.data(),
   };
 };
 
 export const subscribeToCloudPlan = (userId, handlers) => {
+  if (useMockServices) {
+    const listeners = mockPlanListeners.get(userId) || new Set();
+    listeners.add(handlers);
+    mockPlanListeners.set(userId, listeners);
+
+    const documentData = readMockPlanDocument(userId);
+    if (documentData) {
+      handlers?.onData?.(normalizeCloudDocument(documentData));
+    } else {
+      handlers?.onMissing?.();
+    }
+
+    const handleStorage = (event) => {
+      if (event.key !== `${MOCK_PLAN_PREFIX}${userId}`) {
+        return;
+      }
+
+      notifyMockPlanListeners(userId);
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      listeners.delete(handlers);
+      if (listeners.size === 0) {
+        mockPlanListeners.delete(userId);
+      }
+    };
+  }
+
   if (!firestoreInstance) {
     return () => undefined;
   }
@@ -108,11 +402,7 @@ export const subscribeToCloudPlan = (userId, handlers) => {
         return;
       }
 
-      const nextState = normalizeAppState(documentSnapshot.data());
-      handlers?.onData?.({
-        state: nextState,
-        signature: createAppStateSignature(nextState),
-      });
+      handlers?.onData?.(normalizeCloudDocument(documentSnapshot.data()));
     },
     (error) => {
       handlers?.onError?.(error);
@@ -120,24 +410,157 @@ export const subscribeToCloudPlan = (userId, handlers) => {
   );
 };
 
-export const saveCloudPlan = async (userId, appState) => {
-  if (!firestoreInstance) {
-    return;
+export const subscribeToPublicStats = (handlers) => {
+  if (useMockServices) {
+    handlers?.onData?.(readMockPublicStats());
+
+    const handleStorage = (event) => {
+      if (event.key !== MOCK_PUBLIC_STATS_KEY) {
+        return;
+      }
+
+      handlers?.onData?.(readMockPublicStats());
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }
 
-  await setDoc(
-    getCloudPlanReference(userId),
-    {
-      ...normalizeAppState(appState),
-      updatedAt: serverTimestamp(),
-      updatedAtClient: new Date().toISOString(),
+  if (!firestoreInstance) {
+    handlers?.onData?.(DEFAULT_PUBLIC_STATS);
+    return () => undefined;
+  }
+
+  return onSnapshot(
+    getPublicStatsReference(),
+    (documentSnapshot) => {
+      handlers?.onData?.(
+        documentSnapshot.exists()
+          ? { ...DEFAULT_PUBLIC_STATS, ...documentSnapshot.data() }
+          : DEFAULT_PUBLIC_STATS
+      );
     },
-    { merge: true }
+    (error) => {
+      handlers?.onError?.(error);
+    }
   );
+};
+
+export const saveCloudPlan = async (
+  userId,
+  appState,
+  { expectedRevision = null, sessionId = "" } = {}
+) => {
+  if (useMockServices) {
+    const currentDocument = readMockPlanDocument(userId);
+    const currentRevision = Number(currentDocument?.revision || 0);
+
+    if (expectedRevision !== null && currentRevision !== expectedRevision) {
+      throw createConflictError(currentDocument);
+    }
+
+    const nextRevision = currentRevision + 1;
+    const nextDocument = {
+      ...normalizeAppState(appState),
+      revision: nextRevision,
+      updatedAtClient: new Date().toISOString(),
+      updatedBySessionId: sessionId || "",
+    };
+
+    writeMockPlanDocument(userId, nextDocument);
+    notifyMockPlanListeners(userId);
+
+    return {
+      revision: nextRevision,
+      updatedAtClient: nextDocument.updatedAtClient,
+    };
+  }
+
+  if (!firestoreInstance) {
+    return { revision: 0, updatedAtClient: "" };
+  }
+
+  return runTransaction(firestoreInstance, async (transaction) => {
+    const reference = getCloudPlanReference(userId);
+    const documentSnapshot = await transaction.get(reference);
+    const currentDocument = documentSnapshot.exists() ? documentSnapshot.data() : null;
+    const currentRevision = Number(currentDocument?.revision || 0);
+
+    if (expectedRevision !== null && currentRevision !== expectedRevision) {
+      throw createConflictError(currentDocument);
+    }
+
+    const nextRevision = currentRevision + 1;
+    const payload = buildCloudPayload(appState, nextRevision, sessionId);
+    transaction.set(reference, payload, { merge: true });
+
+    return {
+      revision: nextRevision,
+      updatedAtClient: payload.updatedAtClient,
+    };
+  });
+};
+
+export const incrementPublicStats = async (increments = {}) => {
+  const filteredIncrements = Object.entries(increments).reduce(
+    (result, [key, value]) => {
+      const numericValue = Number(value);
+      if (Number.isFinite(numericValue) && numericValue > 0) {
+        result[key] = numericValue;
+      }
+      return result;
+    },
+    {}
+  );
+
+  if (Object.keys(filteredIncrements).length === 0) {
+    return DEFAULT_PUBLIC_STATS;
+  }
+
+  if (useMockServices) {
+    const currentStats = readMockPublicStats();
+    const nextStats = {
+      ...currentStats,
+      ...Object.entries(filteredIncrements).reduce((result, [key, value]) => {
+        result[key] = Number(currentStats[key] || 0) + value;
+        return result;
+      }, {}),
+    };
+    writeMockPublicStats(nextStats);
+    return nextStats;
+  }
+
+  if (!firestoreInstance) {
+    return DEFAULT_PUBLIC_STATS;
+  }
+
+  return runTransaction(firestoreInstance, async (transaction) => {
+    const reference = getPublicStatsReference();
+    const documentSnapshot = await transaction.get(reference);
+    const currentStats = documentSnapshot.exists()
+      ? { ...DEFAULT_PUBLIC_STATS, ...documentSnapshot.data() }
+      : DEFAULT_PUBLIC_STATS;
+
+    const nextStats = {
+      ...currentStats,
+      ...Object.entries(filteredIncrements).reduce((result, [key, value]) => {
+        result[key] = Number(currentStats[key] || 0) + value;
+        return result;
+      }, {}),
+      updatedAt: serverTimestamp(),
+    };
+
+    transaction.set(reference, nextStats, { merge: true });
+    return nextStats;
+  });
 };
 
 export const getFirebaseErrorMessage = (error, fallbackMessage) => {
   const errorCode = error?.code || "";
+
+  if (errorCode === "cloud/conflict") {
+    return "Outra sessão alterou sua conta. O PlanoMeta está conciliando as mudanças antes de salvar novamente.";
+  }
 
   if (errorCode === "permission-denied") {
     return "O Firestore recusou a leitura ou escrita da conta. Publique as regras do banco no Firebase Console.";

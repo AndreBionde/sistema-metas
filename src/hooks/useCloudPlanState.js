@@ -6,16 +6,32 @@ import {
   saveCloudPlan,
   subscribeToCloudPlan,
 } from "../services/firebase";
-import { createAppStateSignature } from "../utils/storage";
+import {
+  cloneAppState,
+  createAppStateSignature,
+  mergeAppStates,
+} from "../utils/storage";
 
 const INITIAL_SYNC_TIMEOUT_MS = 8000;
 
+const createSessionId = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 export const useCloudPlanState = (user) => {
   const defaultState = buildDefaultAppState();
+  const sessionIdRef = useRef(createSessionId());
   const skipNextCloudSaveRef = useRef(false);
   const hasConfirmedCloudStateRef = useRef(false);
   const latestStateRef = useRef(defaultState);
   const latestStateSignatureRef = useRef(createAppStateSignature(defaultState));
+  const confirmedCloudStateRef = useRef(defaultState);
+  const confirmedCloudSignatureRef = useRef(createAppStateSignature(defaultState));
+  const cloudRevisionRef = useRef(0);
 
   const [appState, setAppState] = useState(defaultState);
   const [statusNotice, setStatusNotice] = useState("");
@@ -34,8 +50,22 @@ export const useCloudPlanState = (user) => {
 
   useEffect(() => {
     if (!user) {
+      const nextDefaultState = buildDefaultAppState();
+      setAppState(nextDefaultState);
+      setStatusNotice("");
+      setSaveError("");
+      setLastSavedAt(null);
+      setSaveStatus("idle");
+      setSyncStatus("idle");
+      setLastSyncedAt("");
       setCloudReady(true);
       setLoadingStage("idle");
+      confirmedCloudStateRef.current = nextDefaultState;
+      confirmedCloudSignatureRef.current = createAppStateSignature(nextDefaultState);
+      latestStateRef.current = nextDefaultState;
+      latestStateSignatureRef.current = createAppStateSignature(nextDefaultState);
+      cloudRevisionRef.current = 0;
+      hasConfirmedCloudStateRef.current = false;
       return undefined;
     }
 
@@ -50,7 +80,23 @@ export const useCloudPlanState = (user) => {
     let isActive = true;
     let hasInitialSnapshot = false;
     let initialBootstrapHandled = false;
+    let syncTimeoutId = null;
     let unsubscribeRealtime = () => undefined;
+
+    const markConfirmedCloudState = ({ state, signature, revision, updatedAtClient }) => {
+      confirmedCloudStateRef.current = cloneAppState(state);
+      confirmedCloudSignatureRef.current = signature;
+      cloudRevisionRef.current = revision;
+
+      if (updatedAtClient) {
+        setLastSavedAt(updatedAtClient);
+        setLastSyncedAt(updatedAtClient);
+      } else {
+        const syncStamp = new Date().toISOString();
+        setLastSavedAt(syncStamp);
+        setLastSyncedAt(syncStamp);
+      }
+    };
 
     const completeReadyState = (noticeMessage) => {
       if (!isActive) {
@@ -58,17 +104,15 @@ export const useCloudPlanState = (user) => {
       }
 
       hasInitialSnapshot = true;
-      window.clearTimeout(syncTimeoutId);
+      if (syncTimeoutId) {
+        window.clearTimeout(syncTimeoutId);
+      }
       hasConfirmedCloudStateRef.current = true;
       setCloudReady(true);
       setLoadingStage("idle");
       setSaveError("");
       setSaveStatus("saved");
       setSyncStatus("synced");
-
-      const syncStamp = new Date().toISOString();
-      setLastSavedAt(syncStamp);
-      setLastSyncedAt(syncStamp);
 
       if (noticeMessage) {
         setStatusNotice(noticeMessage);
@@ -86,7 +130,9 @@ export const useCloudPlanState = (user) => {
       }
 
       hasInitialSnapshot = true;
-      window.clearTimeout(syncTimeoutId);
+      if (syncTimeoutId) {
+        window.clearTimeout(syncTimeoutId);
+      }
       hasConfirmedCloudStateRef.current = true;
       setCloudReady(true);
       setLoadingStage("idle");
@@ -99,14 +145,50 @@ export const useCloudPlanState = (user) => {
       }
     };
 
-    const applyRealtimeState = ({ state, signature }, noticeMessage = "") => {
+    const applyRemoteState = (
+      { state, signature, revision, updatedAtClient, updatedBySessionId },
+      noticeMessage = ""
+    ) => {
       initialBootstrapHandled = true;
 
-      if (signature !== latestStateSignatureRef.current) {
+      const hasUnsyncedLocalChanges =
+        latestStateSignatureRef.current !== confirmedCloudSignatureRef.current;
+      const remoteMatchesLatest = signature === latestStateSignatureRef.current;
+
+      if (hasUnsyncedLocalChanges && !remoteMatchesLatest) {
+        const mergeResult = mergeAppStates({
+          baseState: confirmedCloudStateRef.current,
+          remoteState: state,
+          localState: latestStateRef.current,
+        });
+
+        latestStateRef.current = mergeResult.state;
+        latestStateSignatureRef.current = createAppStateSignature(mergeResult.state);
+        setAppState(mergeResult.state);
+        setStatusNotice(
+          mergeResult.conflictCount > 0
+            ? "Detectamos alterações em paralelo e mesclamos os dados antes de sincronizar novamente."
+            : "Atualização remota incorporada sem perda das mudanças locais."
+        );
+      } else if (!remoteMatchesLatest) {
         skipNextCloudSaveRef.current = true;
-        setAppState(state);
         latestStateRef.current = state;
         latestStateSignatureRef.current = signature;
+        setAppState(state);
+        if (noticeMessage) {
+          setStatusNotice(noticeMessage);
+        }
+      }
+
+      markConfirmedCloudState({
+        state,
+        signature,
+        revision,
+        updatedAtClient,
+      });
+
+      if (updatedBySessionId && updatedBySessionId === sessionIdRef.current) {
+        setStatusNotice("");
       }
 
       completeReadyState(noticeMessage);
@@ -120,8 +202,17 @@ export const useCloudPlanState = (user) => {
       initialBootstrapHandled = true;
 
       try {
-        skipNextCloudSaveRef.current = true;
-        await saveCloudPlan(user.uid, latestStateRef.current);
+        const result = await saveCloudPlan(user.uid, latestStateRef.current, {
+          expectedRevision: cloudRevisionRef.current,
+          sessionId: sessionIdRef.current,
+        });
+
+        markConfirmedCloudState({
+          state: latestStateRef.current,
+          signature: latestStateSignatureRef.current,
+          revision: result.revision,
+          updatedAtClient: result.updatedAtClient,
+        });
         completeReadyState("Conta conectada. Seus dados agora ficam salvos na nuvem.");
       } catch (error) {
         console.error("[sync] initial cloud document error", error);
@@ -135,9 +226,9 @@ export const useCloudPlanState = (user) => {
 
     const attachRealtimeSubscription = () => {
       unsubscribeRealtime = subscribeToCloudPlan(user.uid, {
-        onData: ({ state, signature }) => {
-          applyRealtimeState(
-            { state, signature },
+        onData: (payload) => {
+          applyRemoteState(
+            payload,
             hasInitialSnapshot ? "" : "Dados sincronizados da sua conta com sucesso."
           );
         },
@@ -168,10 +259,7 @@ export const useCloudPlanState = (user) => {
         }
 
         if (result.exists) {
-          applyRealtimeState(
-            { state: result.state, signature: result.signature },
-            "Dados sincronizados da sua conta com sucesso."
-          );
+          applyRemoteState(result, "Dados sincronizados da sua conta com sucesso.");
           return;
         }
 
@@ -186,10 +274,7 @@ export const useCloudPlanState = (user) => {
       }
     };
 
-    attachRealtimeSubscription();
-    loadInitialCloudState();
-
-    const syncTimeoutId = window.setTimeout(() => {
+    syncTimeoutId = window.setTimeout(() => {
       if (!isActive || hasInitialSnapshot) {
         return;
       }
@@ -213,9 +298,14 @@ export const useCloudPlanState = (user) => {
       }
     }, INITIAL_SYNC_TIMEOUT_MS);
 
+    attachRealtimeSubscription();
+    loadInitialCloudState();
+
     return () => {
       isActive = false;
-      window.clearTimeout(syncTimeoutId);
+      if (syncTimeoutId) {
+        window.clearTimeout(syncTimeoutId);
+      }
       unsubscribeRealtime?.();
     };
   }, [user]);
@@ -236,15 +326,47 @@ export const useCloudPlanState = (user) => {
     const timeoutId = window.setTimeout(async () => {
       try {
         setSyncStatus("syncing");
-        await saveCloudPlan(user.uid, appState);
+        const result = await saveCloudPlan(user.uid, latestStateRef.current, {
+          expectedRevision: cloudRevisionRef.current,
+          sessionId: sessionIdRef.current,
+        });
 
-        const syncStamp = new Date().toISOString();
-        setLastSavedAt(syncStamp);
-        setLastSyncedAt(syncStamp);
+        const nextSignature = createAppStateSignature(latestStateRef.current);
+        confirmedCloudStateRef.current = cloneAppState(latestStateRef.current);
+        confirmedCloudSignatureRef.current = nextSignature;
+        cloudRevisionRef.current = result.revision;
+        setLastSavedAt(result.updatedAtClient);
+        setLastSyncedAt(result.updatedAtClient);
         setSaveStatus("saved");
         setSyncStatus("synced");
+        setSaveError("");
       } catch (error) {
         console.error("[sync] save error", error);
+
+        if (error?.code === "cloud/conflict" && error?.remoteState) {
+          const mergeResult = mergeAppStates({
+            baseState: confirmedCloudStateRef.current,
+            remoteState: error.remoteState,
+            localState: latestStateRef.current,
+          });
+
+          confirmedCloudStateRef.current = cloneAppState(error.remoteState);
+          confirmedCloudSignatureRef.current = error.remoteSignature;
+          cloudRevisionRef.current = Number(error.remoteRevision || 0);
+          latestStateRef.current = mergeResult.state;
+          latestStateSignatureRef.current = createAppStateSignature(mergeResult.state);
+          setAppState(mergeResult.state);
+          setSaveStatus("saving");
+          setSyncStatus("syncing");
+          setSaveError("");
+          setStatusNotice(
+            mergeResult.conflictCount > 0
+              ? "Outra sessão alterou seus dados. Mesclamos as mudanças e vamos sincronizar novamente."
+              : "Havia uma atualização remota pendente. O PlanoMeta conciliou o estado e está sincronizando."
+          );
+          return;
+        }
+
         setSaveStatus("error");
         setSyncStatus("error");
         setSaveError(

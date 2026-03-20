@@ -1,27 +1,28 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
 import {
-  auth,
+  getCurrentUser,
   isFirebaseConfigured,
   prepareAuthSession,
   signInWithGoogle,
   signOutUser,
+  subscribeToAuthState,
 } from "../services/firebase";
+import { captureAppError, trackEvent } from "../services/monitoring";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const restoreCancelledRef = useRef(false);
   const signInInFlightRef = useRef(false);
-  const [user, setUser] = useState(() => auth?.currentUser || null);
+  const [user, setUser] = useState(() => getCurrentUser());
   const [isLoading, setIsLoading] = useState(
-    () => isFirebaseConfigured && !auth?.currentUser
+    () => isFirebaseConfigured && !getCurrentUser()
   );
   const [authError, setAuthError] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
+    if (!isFirebaseConfigured) {
       setIsLoading(false);
       return undefined;
     }
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+    const unsubscribe = subscribeToAuthState((nextUser) => {
       if (!isMounted) {
         return;
       }
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }) => {
 
       if (nextUser) {
         setAuthError("");
+        trackEvent("login_success");
       }
 
       setUser(nextUser);
@@ -96,17 +98,16 @@ export const AuthProvider = ({ children }) => {
     setIsSigningIn(true);
 
     try {
+      trackEvent("login_start");
       await signInWithGoogle();
     } catch (error) {
+      captureAppError(error, { stage: "sign_in" });
       signInInFlightRef.current = false;
       setIsSigningIn(false);
 
-      // Em alguns navegadores o popup pode reportar fechamento mesmo depois de
-      // o Firebase concluir a autenticação. Nessa situação, deixamos o estado
-      // de auth definir a transição sem mostrar erro falso ao usuário.
       if (error?.code === "auth/popup-closed-by-user") {
         window.setTimeout(() => {
-          if (!auth?.currentUser) {
+          if (!getCurrentUser()) {
             setAuthError("O login foi fechado antes da confirmação.");
           }
         }, 500);
@@ -121,7 +122,9 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (error?.code === "auth/cancelled-popup-request") {
-        setAuthError("Já existe uma tentativa de login em andamento. Aguarde a janela do Google.");
+        setAuthError(
+          "Já existe uma tentativa de login em andamento. Aguarde a janela do Google."
+        );
         return;
       }
 
@@ -145,6 +148,7 @@ export const AuthProvider = ({ children }) => {
     signInInFlightRef.current = false;
     setIsSigningIn(false);
     await signOutUser();
+    trackEvent("logout");
   };
 
   const cancelAuthLoading = async () => {
@@ -154,7 +158,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(false);
     setUser(null);
 
-    if (auth?.currentUser) {
+    if (getCurrentUser()) {
       await signOutUser();
     }
   };

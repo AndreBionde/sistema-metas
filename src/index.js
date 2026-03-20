@@ -5,8 +5,11 @@ import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
 import { appConfig, isProduction } from "./config/appConfig";
+import { initMonitoring, reportWebVitals } from "./services/monitoring";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
+
+initMonitoring();
 
 root.render(
   <React.StrictMode>
@@ -17,6 +20,8 @@ root.render(
     </AuthProvider>
   </React.StrictMode>
 );
+
+reportWebVitals().catch(() => undefined);
 
 if (
   isProduction &&

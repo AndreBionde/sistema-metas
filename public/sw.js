@@ -1,4 +1,6 @@
-const CACHE_NAME = "planometa-v3";
+const CACHE_VERSION = "planometa-v4";
+const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
+const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -9,24 +11,27 @@ const APP_SHELL = [
 ];
 const NAVIGATION_FALLBACK = "/index.html";
 
+const isStaticAsset = (requestUrl) =>
+  [".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".webp", ".ico", ".json"].some(
+    (extension) => requestUrl.pathname.endsWith(extension)
+  );
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(APP_SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL))
   );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
-        )
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => ![APP_SHELL_CACHE, RUNTIME_CACHE].includes(key))
+          .map((key) => caches.delete(key))
       )
+    )
   );
   self.clients.claim();
 });
@@ -42,36 +47,51 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      return fetch(event.request)
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
         .then((networkResponse) => {
-          if (
-            !networkResponse ||
-            networkResponse.status !== 200 ||
-            networkResponse.type !== "basic"
-          ) {
-            return networkResponse;
-          }
-
-          const clonedResponse = networkResponse.clone();
-          caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(event.request, clonedResponse));
-
+          const responseClone = networkResponse.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(NAVIGATION_FALLBACK, responseClone);
+          });
           return networkResponse;
         })
-        .catch(() => {
-          if (event.request.mode === "navigate") {
-            return caches.match(NAVIGATION_FALLBACK);
-          }
-
+        .catch(async () => {
+          const cachedResponse =
+            (await caches.match(event.request)) ||
+            (await caches.match(NAVIGATION_FALLBACK));
           return cachedResponse || Response.error();
-        });
-    })
-  );
+        })
+    );
+    return;
+  }
+
+  if (isStaticAsset(requestUrl)) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const networkFetch = fetch(event.request)
+          .then((networkResponse) => {
+            if (
+              networkResponse &&
+              networkResponse.status === 200 &&
+              networkResponse.type === "basic"
+            ) {
+              const responseClone = networkResponse.clone();
+              caches.open(RUNTIME_CACHE).then((cache) => {
+                cache.put(event.request, responseClone);
+              });
+            }
+
+            return networkResponse;
+          })
+          .catch(() => cachedResponse || Response.error());
+
+        return cachedResponse || networkFetch;
+      })
+    );
+    return;
+  }
+
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });

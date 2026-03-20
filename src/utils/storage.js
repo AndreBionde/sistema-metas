@@ -73,6 +73,17 @@ const sanitizeYearPlan = (plan) => {
   return { goals, monthlyData };
 };
 
+const sanitizeMetadata = (metadata) => ({
+  onboardingCompleted: Boolean(metadata?.onboardingCompleted),
+  lastExportAt:
+    typeof metadata?.lastExportAt === "string" ? metadata.lastExportAt : "",
+  lastImportAt:
+    typeof metadata?.lastImportAt === "string" ? metadata.lastImportAt : "",
+  publicMetrics: {
+    planStartedTracked: Boolean(metadata?.publicMetrics?.planStartedTracked),
+  },
+});
+
 const normalizeModernAppState = (state) => {
   const currentYear = String(state?.currentYear || getCurrentYearKey());
   const sourceYears =
@@ -93,13 +104,7 @@ const normalizeModernAppState = (state) => {
   return {
     currentYear,
     years,
-    metadata: {
-      onboardingCompleted: Boolean(state?.metadata?.onboardingCompleted),
-      lastExportAt:
-        typeof state?.metadata?.lastExportAt === "string"
-          ? state.metadata.lastExportAt
-          : "",
-    },
+    metadata: sanitizeMetadata(state?.metadata),
   };
 };
 
@@ -136,3 +141,276 @@ export const normalizeAppState = (state) => {
 
 export const createAppStateSignature = (state) =>
   JSON.stringify(normalizeAppState(state));
+
+export const cloneAppState = (state) =>
+  JSON.parse(JSON.stringify(normalizeAppState(state)));
+
+export const parseImportedAppState = (rawContent) =>
+  normalizeAppState(JSON.parse(rawContent));
+
+const areEqual = (leftValue, rightValue) =>
+  JSON.stringify(leftValue ?? null) === JSON.stringify(rightValue ?? null);
+
+const chooseTimestamp = (...values) =>
+  values
+    .filter((value) => typeof value === "string" && value)
+    .sort((leftValue, rightValue) => new Date(rightValue) - new Date(leftValue))[0] || "";
+
+const mergeScalar = ({ baseValue, remoteValue, localValue, preferLocalOnConflict = true }) => {
+  if (areEqual(localValue, remoteValue)) {
+    return { value: localValue, conflict: false };
+  }
+
+  const localChanged = !areEqual(localValue, baseValue);
+  const remoteChanged = !areEqual(remoteValue, baseValue);
+
+  if (localChanged && !remoteChanged) {
+    return { value: localValue, conflict: false };
+  }
+
+  if (remoteChanged && !localChanged) {
+    return { value: remoteValue, conflict: false };
+  }
+
+  if (!localChanged && !remoteChanged) {
+    return { value: remoteValue, conflict: false };
+  }
+
+  return {
+    value: preferLocalOnConflict ? localValue : remoteValue ?? localValue,
+    conflict: true,
+  };
+};
+
+const mergeGoalEntity = (baseGoal, remoteGoal, localGoal) => {
+  if (!baseGoal && !remoteGoal && !localGoal) {
+    return { goal: null, conflictCount: 0 };
+  }
+
+  if (!remoteGoal && localGoal && !baseGoal) {
+    return { goal: sanitizeGoal(localGoal, 0), conflictCount: 0 };
+  }
+
+  if (!localGoal && remoteGoal && !baseGoal) {
+    return { goal: sanitizeGoal(remoteGoal, 0), conflictCount: 0 };
+  }
+
+  const localChanged = !areEqual(localGoal, baseGoal);
+  const remoteChanged = !areEqual(remoteGoal, baseGoal);
+
+  if (localChanged && !remoteChanged) {
+    return {
+      goal: localGoal ? sanitizeGoal(localGoal, 0) : null,
+      conflictCount: 0,
+    };
+  }
+
+  if (remoteChanged && !localChanged) {
+    return {
+      goal: remoteGoal ? sanitizeGoal(remoteGoal, 0) : null,
+      conflictCount: 0,
+    };
+  }
+
+  if (!localChanged && !remoteChanged) {
+    return {
+      goal: remoteGoal ? sanitizeGoal(remoteGoal, 0) : localGoal ? sanitizeGoal(localGoal, 0) : null,
+      conflictCount: 0,
+    };
+  }
+
+  if (!localGoal || !remoteGoal) {
+    return {
+      goal: sanitizeGoal(localGoal || remoteGoal, 0),
+      conflictCount: 1,
+    };
+  }
+
+  let conflictCount = 0;
+  const mergedGoal = {};
+
+  ["id", "name", "category", "color", "status", "targetAmount", "plannedMonthlyAmount"].forEach(
+    (field) => {
+      const result = mergeScalar({
+        baseValue: baseGoal?.[field],
+        remoteValue: remoteGoal?.[field],
+        localValue: localGoal?.[field],
+      });
+      mergedGoal[field] = result.value;
+      conflictCount += result.conflict ? 1 : 0;
+    }
+  );
+
+  return {
+    goal: sanitizeGoal(mergedGoal, 0),
+    conflictCount,
+  };
+};
+
+const mergeGoals = (baseGoals, remoteGoals, localGoals) => {
+  const baseMap = new Map((baseGoals || []).map((goal) => [String(goal.id), goal]));
+  const remoteMap = new Map((remoteGoals || []).map((goal) => [String(goal.id), goal]));
+  const localMap = new Map((localGoals || []).map((goal) => [String(goal.id), goal]));
+  const orderedIds = [
+    ...new Set([
+      ...(localGoals || []).map((goal) => String(goal.id)),
+      ...(remoteGoals || []).map((goal) => String(goal.id)),
+      ...(baseGoals || []).map((goal) => String(goal.id)),
+    ]),
+  ];
+
+  let conflictCount = 0;
+
+  const goals = orderedIds
+    .map((goalId, index) => {
+      const result = mergeGoalEntity(
+        baseMap.get(goalId),
+        remoteMap.get(goalId),
+        localMap.get(goalId)
+      );
+      conflictCount += result.conflictCount;
+      return result.goal ? sanitizeGoal(result.goal, index) : null;
+    })
+    .filter(Boolean);
+
+  return { goals, conflictCount };
+};
+
+const mergeMonth = (baseMonth, remoteMonth, localMonth, monthIndex) => {
+  const valueIds = [
+    ...new Set([
+      ...Object.keys(baseMonth?.values || {}),
+      ...Object.keys(remoteMonth?.values || {}),
+      ...Object.keys(localMonth?.values || {}),
+    ]),
+  ];
+
+  let conflictCount = 0;
+  const mergedValues = valueIds.reduce((values, goalId) => {
+    const result = mergeScalar({
+      baseValue: baseMonth?.values?.[goalId] ?? 0,
+      remoteValue: remoteMonth?.values?.[goalId] ?? 0,
+      localValue: localMonth?.values?.[goalId] ?? 0,
+    });
+
+    if (Number(result.value) > 0) {
+      values[goalId] = sanitizeNumber(result.value);
+    }
+
+    conflictCount += result.conflict ? 1 : 0;
+    return values;
+  }, {});
+
+  const observationResult = mergeScalar({
+    baseValue: baseMonth?.observation ?? "",
+    remoteValue: remoteMonth?.observation ?? "",
+    localValue: localMonth?.observation ?? "",
+  });
+  conflictCount += observationResult.conflict ? 1 : 0;
+
+  return {
+    month: {
+      month: monthIndex + 1,
+      values: mergedValues,
+      observation: typeof observationResult.value === "string"
+        ? observationResult.value.slice(0, MAX_OBSERVATION_LENGTH)
+        : "",
+    },
+    conflictCount,
+  };
+};
+
+const mergeYearPlan = (basePlan, remotePlan, localPlan) => {
+  const normalizedBasePlan = sanitizeYearPlan(basePlan);
+  const normalizedRemotePlan = sanitizeYearPlan(remotePlan);
+  const normalizedLocalPlan = sanitizeYearPlan(localPlan);
+
+  const goalsResult = mergeGoals(
+    normalizedBasePlan.goals,
+    normalizedRemotePlan.goals,
+    normalizedLocalPlan.goals
+  );
+
+  let conflictCount = goalsResult.conflictCount;
+  const monthlyData = buildEmptyMonthlyData().map((_, monthIndex) => {
+    const result = mergeMonth(
+      normalizedBasePlan.monthlyData[monthIndex],
+      normalizedRemotePlan.monthlyData[monthIndex],
+      normalizedLocalPlan.monthlyData[monthIndex],
+      monthIndex
+    );
+    conflictCount += result.conflictCount;
+    return result.month;
+  });
+
+  return {
+    plan: {
+      goals: goalsResult.goals,
+      monthlyData,
+    },
+    conflictCount,
+  };
+};
+
+export const mergeAppStates = ({ baseState, remoteState, localState }) => {
+  const normalizedBaseState = normalizeAppState(baseState);
+  const normalizedRemoteState = normalizeAppState(remoteState);
+  const normalizedLocalState = normalizeAppState(localState);
+  const yearKeys = [
+    ...new Set([
+      ...Object.keys(normalizedBaseState.years || {}),
+      ...Object.keys(normalizedRemoteState.years || {}),
+      ...Object.keys(normalizedLocalState.years || {}),
+    ]),
+  ];
+
+  let conflictCount = 0;
+  const years = yearKeys.reduce((nextYears, yearKey) => {
+    const result = mergeYearPlan(
+      normalizedBaseState.years?.[yearKey],
+      normalizedRemoteState.years?.[yearKey],
+      normalizedLocalState.years?.[yearKey]
+    );
+    conflictCount += result.conflictCount;
+    nextYears[yearKey] = result.plan;
+    return nextYears;
+  }, {});
+
+  const metadata = sanitizeMetadata({
+    onboardingCompleted:
+      normalizedLocalState.metadata?.onboardingCompleted ||
+      normalizedRemoteState.metadata?.onboardingCompleted,
+    lastExportAt: chooseTimestamp(
+      normalizedLocalState.metadata?.lastExportAt,
+      normalizedRemoteState.metadata?.lastExportAt,
+      normalizedBaseState.metadata?.lastExportAt
+    ),
+    lastImportAt: chooseTimestamp(
+      normalizedLocalState.metadata?.lastImportAt,
+      normalizedRemoteState.metadata?.lastImportAt,
+      normalizedBaseState.metadata?.lastImportAt
+    ),
+    publicMetrics: {
+      planStartedTracked:
+        normalizedLocalState.metadata?.publicMetrics?.planStartedTracked ||
+        normalizedRemoteState.metadata?.publicMetrics?.planStartedTracked ||
+        normalizedBaseState.metadata?.publicMetrics?.planStartedTracked,
+    },
+  });
+
+  const currentYearResult = mergeScalar({
+    baseValue: normalizedBaseState.currentYear,
+    remoteValue: normalizedRemoteState.currentYear,
+    localValue: normalizedLocalState.currentYear,
+  });
+  conflictCount += currentYearResult.conflict ? 1 : 0;
+
+  return {
+    state: normalizeModernAppState({
+      currentYear: currentYearResult.value,
+      years,
+      metadata,
+    }),
+    conflictCount,
+  };
+};

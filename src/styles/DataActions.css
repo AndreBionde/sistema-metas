@@ -59,10 +59,23 @@
 }
 
 .data-actions-help {
-  margin-top: 0.78rem;
   font-size: 0.82rem;
   color: var(--ink-soft);
   line-height: 1.5;
+}
+
+.data-actions-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1rem;
+  margin-top: 0.78rem;
+}
+
+.data-actions-policy {
+  margin-top: 0.62rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
 }
 
 .data-actions-notice {
@@ -70,6 +83,18 @@
   font-size: 0.82rem;
   color: var(--teal);
   line-height: 1.5;
+}
+
+.data-actions-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .data-action-button:focus-visible {
@@ -86,6 +111,10 @@
 
   .data-actions-group {
     display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .data-actions-meta {
     grid-template-columns: 1fr;
   }
 

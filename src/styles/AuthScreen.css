@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.8rem;
+  padding: 1.8rem 2.4rem;
   background:
     radial-gradient(circle at top right, rgba(15, 107, 114, 0.16), transparent 26%),
     radial-gradient(circle at bottom left, rgba(17, 52, 79, 0.2), transparent 30%),
@@ -11,17 +11,20 @@
 }
 
 .auth-hero {
-  width: min(100%, 70rem);
+  width: min(100%, 86rem);
+  min-height: min(48rem, calc(100vh - 4rem));
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(20rem, 0.92fr);
-  gap: 1.6rem;
-  background: linear-gradient(135deg, rgba(8, 28, 46, 0.985), rgba(16, 52, 79, 0.97));
-  border-radius: 1.8rem;
+  grid-template-columns: minmax(0, 1.28fr) minmax(24rem, 0.88fr);
+  gap: 1.9rem;
+  background:
+    linear-gradient(150deg, rgba(8, 28, 46, 0.99), rgba(16, 52, 79, 0.97)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+  border-radius: 2rem;
   box-shadow:
-    0 42px 96px -46px rgba(8, 24, 39, 0.72),
-    0 20px 42px -30px rgba(8, 24, 39, 0.34),
+    0 52px 120px -52px rgba(8, 24, 39, 0.72),
+    0 22px 44px -30px rgba(8, 24, 39, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  padding: 2.5rem;
+  padding: 2.8rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   overflow: hidden;
   animation: authHeroIn 0.6s ease-out;
@@ -31,9 +34,9 @@
 .auth-hero::before {
   content: "";
   position: absolute;
-  inset: auto auto -30% 40%;
-  width: 18rem;
-  height: 18rem;
+  inset: auto auto -34% 36%;
+  width: 22rem;
+  height: 22rem;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(15, 107, 114, 0.28), transparent 62%);
   pointer-events: none;
@@ -42,9 +45,15 @@
 .auth-hero::after {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  inset: 1.1rem auto 1.1rem 56%;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.16) 20%,
+    rgba(255, 255, 255, 0.1) 80%,
+    rgba(255, 255, 255, 0)
+  );
   pointer-events: none;
 }
 
@@ -61,9 +70,9 @@
 }
 
 .auth-copy {
-  max-width: 39rem;
+  max-width: 44rem;
   align-self: center;
-  padding: 0.4rem;
+  padding: 0.6rem 0.85rem 0.6rem 0.4rem;
   position: relative;
   z-index: 1;
 }
@@ -96,18 +105,19 @@
 }
 
 .auth-title {
-  max-width: 42rem;
-  margin-top: 0.85rem;
-  font-size: clamp(2.1rem, 5vw, 3.35rem);
-  line-height: 1.04;
+  max-width: 45rem;
+  margin-top: 1rem;
+  font-size: clamp(2.5rem, 4.8vw, 4.5rem);
+  line-height: 0.98;
   color: #f7fbfd;
 }
 
 .auth-description {
-  max-width: 38rem;
-  margin-top: 1rem;
+  max-width: 39rem;
+  margin-top: 1.15rem;
   color: rgba(236, 243, 248, 0.84);
-  line-height: 1.7;
+  line-height: 1.78;
+  font-size: 1.03rem;
 }
 
 .auth-highlights {
@@ -133,7 +143,7 @@
 }
 
 .auth-button {
-  margin-top: 1.6rem;
+  margin-top: 1.8rem;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -145,7 +155,7 @@
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 18px 32px -22px rgba(7, 24, 39, 0.74);
+  box-shadow: 0 22px 34px -22px rgba(7, 24, 39, 0.74);
 }
 
 .auth-button:hover {
@@ -184,8 +194,8 @@
   display: grid;
   gap: 1rem;
   align-self: stretch;
-  padding: 0.55rem;
-  border-radius: 1.5rem;
+  padding: 0.7rem;
+  border-radius: 1.7rem;
   background: linear-gradient(180deg, rgba(246, 250, 253, 0.98), rgba(233, 241, 248, 0.95));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
@@ -198,14 +208,14 @@
 .auth-panel-metric {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(16, 33, 49, 0.06);
-  border-radius: 1.2rem;
+  border-radius: 1.35rem;
   box-shadow:
     0 24px 42px -34px rgba(8, 24, 39, 0.22),
     0 10px 18px -16px rgba(8, 24, 39, 0.08);
 }
 
 .auth-panel-card {
-  padding: 1.4rem 1.35rem 1.24rem;
+  padding: 1.5rem 1.45rem 1.35rem;
 }
 
 .auth-panel-card-featured {
@@ -241,6 +251,60 @@
   gap: 0.9rem;
 }
 
+.auth-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.auth-stat-card {
+  padding: 1.2rem 1.1rem;
+  border-radius: 1.3rem;
+  border: 1px solid rgba(16, 33, 49, 0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(242, 247, 251, 0.92));
+  box-shadow:
+    0 24px 42px -34px rgba(8, 24, 39, 0.22),
+    0 10px 18px -16px rgba(8, 24, 39, 0.08);
+}
+
+.auth-stat-top {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.auth-stat-value {
+  display: block;
+  margin-top: 0.95rem;
+  font-size: clamp(1.7rem, 2vw, 2.2rem);
+  line-height: 1;
+  color: var(--navy-strong);
+  letter-spacing: -0.03em;
+}
+
+.auth-stat-card-teal .auth-panel-icon,
+.auth-stat-card-teal .auth-stat-value {
+  color: var(--teal);
+}
+
+.auth-stat-card-navy .auth-panel-icon,
+.auth-stat-card-navy .auth-stat-value {
+  color: var(--navy);
+}
+
+.auth-stat-card-sand .auth-panel-icon,
+.auth-stat-card-sand .auth-stat-value {
+  color: var(--sand);
+}
+
+.auth-stat-card-emerald .auth-panel-icon,
+.auth-stat-card-emerald .auth-stat-value {
+  color: var(--green);
+}
+
 .auth-panel-metric {
   padding: 1rem;
 }
@@ -261,8 +325,13 @@
 
 @media (max-width: 960px) {
   .auth-hero {
-    padding: 1.9rem;
+    min-height: auto;
+    padding: 2rem;
     grid-template-columns: 1fr;
+  }
+
+  .auth-hero::after {
+    display: none;
   }
 
   .auth-copy {
@@ -273,6 +342,10 @@
   .auth-panel-grid {
     grid-template-columns: 1fr;
   }
+
+  .auth-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -281,7 +354,8 @@
   }
 
   .auth-hero {
-    padding: 1.3rem;
+    width: 100%;
+    padding: 1.35rem;
     gap: 1.15rem;
     border-radius: 1.3rem;
   }
@@ -293,7 +367,7 @@
   }
 
   .auth-title {
-    font-size: 1.95rem;
+    font-size: 2.15rem;
   }
 
   .auth-brand-mark {
@@ -331,7 +405,13 @@
   }
 
   .auth-panel-card,
-  .auth-panel-metric {
+  .auth-panel-metric,
+  .auth-stat-card {
     border-radius: 1rem;
+  }
+
+  .auth-stats-grid,
+  .auth-panel-grid {
+    grid-template-columns: 1fr;
   }
 }

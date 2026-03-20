@@ -1,5 +1,6 @@
 import React from "react";
 import "../styles/ErrorBoundary.css";
+import { captureAppError } from "../services/monitoring";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -11,8 +12,10 @@ class ErrorBoundary extends React.Component {
     return { hasError: true };
   }
 
-  componentDidCatch() {
-    return undefined;
+  componentDidCatch(error, errorInfo) {
+    captureAppError(error, {
+      componentStack: errorInfo?.componentStack || "",
+    });
   }
 
   handleReload = () => {

@@ -22,6 +22,13 @@ import {
 } from "./utils/exporters";
 import { useCloudPlanState } from "./hooks/useCloudPlanState";
 import { useInstallPrompt } from "./hooks/useInstallPrompt";
+import { usePublicStats } from "./hooks/usePublicStats";
+import {
+  identifyMonitoringUser,
+  trackEvent,
+  trackPageView,
+} from "./services/monitoring";
+import { incrementPublicStats } from "./services/firebase";
 import {
   MAX_GOAL_NAME_LENGTH,
   buildDashboardMetrics,
@@ -32,6 +39,7 @@ import {
   getNextAvailableYear,
   removeGoalFromPlan,
 } from "./utils/dashboardState";
+import { cloneAppState, parseImportedAppState } from "./utils/storage";
 import "./App.css";
 
 const DashboardApp = ({ user, onSignOut }) => {
@@ -116,11 +124,28 @@ const DashboardApp = ({ user, onSignOut }) => {
   };
 
   const addGoal = () => {
+    const shouldCountPlanStart =
+      goals.length === 0 && !appState.metadata?.publicMetrics?.planStartedTracked;
+
     updateCurrentPlan((plan) => ({
       ...plan,
       goals: [...plan.goals, buildGoalDraft(plan.goals)],
     }));
+    if (shouldCountPlanStart) {
+      updateMetadata((metadata) => ({
+        ...metadata,
+        publicMetrics: {
+          ...metadata.publicMetrics,
+          planStartedTracked: true,
+        },
+      }));
+    }
     setStatusNotice("Nova meta adicionada.");
+    trackEvent("goal_add");
+    incrementPublicStats({
+      goalsCreated: 1,
+      plansStarted: shouldCountPlanStart ? 1 : 0,
+    }).catch(() => undefined);
   };
 
   const removeGoal = (goalId) => {
@@ -130,6 +155,7 @@ const DashboardApp = ({ user, onSignOut }) => {
 
     updateCurrentPlan((plan) => removeGoalFromPlan(plan, goalId));
     setStatusNotice("Meta removida com sucesso.");
+    trackEvent("goal_remove");
   };
 
   const updateGoalField = (goalId, updater) => {
@@ -231,6 +257,8 @@ const DashboardApp = ({ user, onSignOut }) => {
     );
     handleExportStamp();
     setStatusNotice(`CSV do ano ${currentYear} exportado com sucesso.`);
+    trackEvent("export_csv", { year: currentYear });
+    incrementPublicStats({ reportsGenerated: 1 }).catch(() => undefined);
   };
 
   const handleExportXlsx = async () => {
@@ -238,6 +266,8 @@ const DashboardApp = ({ user, onSignOut }) => {
     await exportWorkbookFile(appState, `planometa-${timestamp}.xlsx`);
     handleExportStamp();
     setStatusNotice("Planilha XLSX exportada com sucesso.");
+    trackEvent("export_xlsx", { years: Object.keys(appState.years).length });
+    incrementPublicStats({ reportsGenerated: 1 }).catch(() => undefined);
   };
 
   const handleExportPdf = async () => {
@@ -245,6 +275,71 @@ const DashboardApp = ({ user, onSignOut }) => {
     await exportPdfFile(appState, `relatorio-planometa-${timestamp}.pdf`);
     handleExportStamp();
     setStatusNotice("Relatório PDF exportado com sucesso.");
+    trackEvent("export_pdf", { years: Object.keys(appState.years).length });
+    incrementPublicStats({ reportsGenerated: 1 }).catch(() => undefined);
+  };
+
+  const handleExportJson = () => {
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    downloadTextFile(
+      `planometa-backup-${timestamp}.json`,
+      JSON.stringify(cloneAppState(appState), null, 2),
+      "application/json;charset=utf-8"
+    );
+    handleExportStamp();
+    setStatusNotice("Backup JSON exportado com sucesso.");
+    trackEvent("export_json_backup", { years: Object.keys(appState.years).length });
+    incrementPublicStats({ reportsGenerated: 1 }).catch(() => undefined);
+  };
+
+  const handleImportJson = async (file) => {
+    if (!file) {
+      return;
+    }
+
+    const shouldImport = window.confirm(
+      "Importar este backup vai substituir o planejamento atual desta conta. Deseja continuar?"
+    );
+
+    if (!shouldImport) {
+      return;
+    }
+
+    try {
+      const rawContent = await file.text();
+      const importedState = parseImportedAppState(rawContent);
+      const importedGoalsCount = Object.values(importedState.years).reduce(
+        (sum, yearPlan) => sum + yearPlan.goals.length,
+        0
+      );
+      const shouldCountPlanStart =
+        importedGoalsCount > 0 && !appState.metadata?.publicMetrics?.planStartedTracked;
+
+      setAppState({
+        ...importedState,
+        metadata: {
+          ...importedState.metadata,
+          lastImportAt: new Date().toISOString(),
+          publicMetrics: {
+            ...importedState.metadata?.publicMetrics,
+            planStartedTracked:
+              importedGoalsCount > 0
+                ? true
+                : Boolean(importedState.metadata?.publicMetrics?.planStartedTracked),
+          },
+        },
+      });
+      setStatusNotice("Backup importado com sucesso. A nuvem será atualizada.");
+      trackEvent("import_json_backup", {
+        years: Object.keys(importedState.years).length,
+      });
+      if (shouldCountPlanStart) {
+        incrementPublicStats({ plansStarted: 1 }).catch(() => undefined);
+      }
+    } catch (error) {
+      setStatusNotice("Não foi possível importar o backup. Verifique o arquivo JSON.");
+      trackEvent("import_json_backup_error");
+    }
   };
 
   const resetAllData = () => {
@@ -258,6 +353,7 @@ const DashboardApp = ({ user, onSignOut }) => {
 
     setAppState(buildResetState());
     setStatusNotice("Conta resetada para o estado inicial. A nuvem será atualizada.");
+    trackEvent("reset_account");
   };
 
   const handleCreateYear = () => {
@@ -274,6 +370,8 @@ const DashboardApp = ({ user, onSignOut }) => {
       },
     }));
     setStatusNotice(`Ano ${nextYear} criado com a estrutura do ano atual.`);
+    trackEvent("create_year", { year: nextYear });
+    incrementPublicStats({ activeYearsCreated: 1 }).catch(() => undefined);
   };
 
   const handleChangeYear = (nextYear) => {
@@ -288,6 +386,7 @@ const DashboardApp = ({ user, onSignOut }) => {
       ...metadata,
       onboardingCompleted: true,
     }));
+    trackEvent("dismiss_onboarding");
   };
 
   if (!cloudReady) {
@@ -307,7 +406,10 @@ const DashboardApp = ({ user, onSignOut }) => {
 
   return (
     <div className="app-container">
-      <div className="app-content">
+      <a className="skip-link" href="#app-main-content">
+        Pular para o conteúdo principal
+      </a>
+      <main className="app-content" id="app-main-content">
         <Header
           lastSavedAt={lastSavedAt}
           saveError={saveError}
@@ -339,9 +441,12 @@ const DashboardApp = ({ user, onSignOut }) => {
           onExportCsv={handleExportCsv}
           onExportXlsx={handleExportXlsx}
           onExportPdf={handleExportPdf}
+          onExportJson={handleExportJson}
+          onImportJson={handleImportJson}
           onReset={resetAllData}
           notice={statusNotice}
           lastExportAt={appState.metadata?.lastExportAt}
+          lastImportAt={appState.metadata?.lastImportAt}
         />
 
         <StatsCards
@@ -394,7 +499,7 @@ const DashboardApp = ({ user, onSignOut }) => {
           onInstall={handleInstallApp}
           pwaEnabled={appConfig.enablePwa}
         />
-      </div>
+      </main>
     </div>
   );
 };
@@ -410,6 +515,15 @@ const App = () => {
     signOutUser,
     cancelAuthLoading,
   } = useAuth();
+  const publicStats = usePublicStats();
+
+  useEffect(() => {
+    trackPageView();
+  }, []);
+
+  useEffect(() => {
+    identifyMonitoringUser(user);
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -429,6 +543,7 @@ const App = () => {
         isFirebaseConfigured={isFirebaseConfigured}
         authError={authError}
         isSigningIn={isSigningIn}
+        publicStats={publicStats}
       />
     );
   }

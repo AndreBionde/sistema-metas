@@ -2,12 +2,16 @@ import {
   BarChart3,
   Chrome,
   FileText,
+  MoonStar,
+  Palette,
   ShieldCheck,
   Sparkles,
+  SunMedium,
   Target,
   TrendingUp,
 } from "lucide-react";
 import BrandMark from "./BrandMark";
+import { useTheme } from "../contexts/ThemeContext";
 import "../styles/AuthScreen.css";
 
 const formatStatValue = (value) =>
@@ -16,6 +20,11 @@ const formatStatValue = (value) =>
     maximumFractionDigits: 1,
   }).format(Number(value) || 0);
 
+const themeIcons = {
+  light: SunMedium,
+  dark: MoonStar,
+};
+
 const AuthScreen = ({
   onSignIn,
   isFirebaseConfigured,
@@ -23,6 +32,9 @@ const AuthScreen = ({
   isSigningIn = false,
   publicStats,
 }) => {
+  const { themeMode, brandTheme, setThemeMode, setBrandTheme } = useTheme();
+  const ThemeIcon = themeIcons[themeMode] || SunMedium;
+
   const statsCards = [
     {
       icon: Target,
@@ -38,7 +50,7 @@ const AuthScreen = ({
     },
     {
       icon: FileText,
-      label: "Relatórios gerados",
+      label: "Relat\u00f3rios gerados",
       value: publicStats?.reportsGenerated || 0,
       tone: "sand",
     },
@@ -63,11 +75,11 @@ const AuthScreen = ({
           </div>
 
           <h1 className="auth-title">
-            Organize suas metas, acompanhe seus aportes e visualize sua evolução.
+            {"Organize suas metas, acompanhe seus aportes e visualize sua evolu\u00e7\u00e3o."}
           </h1>
           <p className="auth-description">
-            Entre com sua conta Google para acessar seu painel financeiro com
-            segurança, de forma simples e pronta para o dia a dia.
+            {"Entre com sua conta Google para acessar seu painel financeiro com "}
+            {"seguran\u00e7a, de forma simples e pronta para o dia a dia."}
           </p>
           <div className="auth-highlights">
             <p>
@@ -76,7 +88,7 @@ const AuthScreen = ({
             </p>
             <p>
               <TrendingUp className="auth-highlight-icon" aria-hidden="true" />
-              Acompanhamento contínuo
+              {"Acompanhamento cont\u00ednuo"}
             </p>
           </div>
           {isFirebaseConfigured ? (
@@ -91,8 +103,8 @@ const AuthScreen = ({
             </button>
           ) : (
             <div className="auth-warning">
-              O acesso ainda não está disponível neste momento. Revise a configuração
-              da conta antes de liberar o login.
+              {"O acesso ainda n\u00e3o est\u00e1 dispon\u00edvel neste momento. Revise a configura\u00e7\u00e3o "}
+              {"da conta antes de liberar o login."}
             </div>
           )}
           {authError ? (
@@ -102,15 +114,51 @@ const AuthScreen = ({
           ) : null}
         </div>
 
-        <aside className="auth-panel" aria-label="Estatísticas públicas do PlanoMeta">
+        <aside
+          className="auth-panel"
+          aria-label={"Estat\u00edsticas p\u00fablicas do PlanoMeta"}
+        >
+          <div className="auth-theme-row">
+            <label className="auth-theme-field">
+              <span>
+                <ThemeIcon className="auth-panel-icon" aria-hidden="true" />
+                Modo
+              </span>
+              <select
+                value={themeMode}
+                onChange={(event) => setThemeMode(event.target.value)}
+                aria-label="Modo visual"
+              >
+                <option value="light">Claro</option>
+                <option value="dark">Escuro</option>
+              </select>
+            </label>
+
+            <label className="auth-theme-field">
+              <span>
+                <Palette className="auth-panel-icon" aria-hidden="true" />
+                Estilo
+              </span>
+              <select
+                value={brandTheme}
+                onChange={(event) => setBrandTheme(event.target.value)}
+                aria-label="Estilo visual"
+              >
+                <option value="classic">{"Cl\u00e1ssico"}</option>
+                <option value="executive">Executivo</option>
+                <option value="minimal">Minimal</option>
+              </select>
+            </label>
+          </div>
+
           <div className="auth-panel-card auth-panel-card-featured">
             <span className="auth-panel-label">Panorama da plataforma</span>
             <strong className="auth-panel-value">
-              Acompanhe o avanço coletivo de quem já organiza metas com o PlanoMeta.
+              {"Acompanhe o avan\u00e7o coletivo de quem j\u00e1 organiza metas com o PlanoMeta."}
             </strong>
             <p className="auth-panel-copy">
-              Números agregados da plataforma mostram como a rotina financeira vem
-              ganhando tração entre os usuários.
+              {"N\u00fameros agregados da plataforma mostram como a rotina financeira vem "}
+              {"ganhando tra\u00e7\u00e3o entre os usu\u00e1rios."}
             </p>
           </div>
 
@@ -137,7 +185,7 @@ const AuthScreen = ({
             </div>
             <div className="auth-panel-metric">
               <TrendingUp className="auth-panel-icon" aria-hidden="true" />
-              <span>Evolução</span>
+              <span>{"Evolu\u00e7\u00e3o"}</span>
               <strong>Leitura anual consolidada</strong>
             </div>
           </div>

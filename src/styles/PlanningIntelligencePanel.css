@@ -1,0 +1,156 @@
+.planning-intelligence-grid,
+.governance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.planning-intelligence-card,
+.governance-card {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
+}
+
+.planning-intelligence-card-top,
+.governance-card-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.planning-intelligence-list,
+.governance-list {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.planning-intelligence-item,
+.governance-item {
+  padding: 0.82rem 0.9rem;
+  border-radius: 0.95rem;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+}
+
+.planning-intelligence-item strong,
+.governance-item strong {
+  color: var(--navy-strong);
+}
+
+.planning-intelligence-item p,
+.governance-item p,
+.governance-item small {
+  margin-top: 0.2rem;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.planning-priority-grid {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.planning-priority-pill {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.82rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(15, 107, 114, 0.08);
+  border: 1px solid rgba(15, 107, 114, 0.12);
+}
+
+.planning-priority-pill strong {
+  color: var(--navy-strong);
+}
+
+.planning-priority-pill span {
+  color: var(--teal);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.planning-intelligence-empty,
+.governance-empty {
+  margin-top: 0.85rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.governance-item-action {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.governance-item-action button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.62rem 0.82rem;
+  border-radius: 0.82rem;
+  border: 1px solid var(--line-strong);
+  background: var(--input-bg);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.governance-expand-button {
+  margin-top: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.66rem 0.88rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-elevated);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.governance-icon,
+.planning-intelligence-icon,
+.governance-action-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+:root[data-theme="dark"] .planning-intelligence-item,
+:root[data-theme="dark"] .governance-item {
+  background: color-mix(in srgb, var(--surface-elevated) 92%, #000 8%);
+}
+
+:root[data-theme="dark"] .planning-priority-pill {
+  background: color-mix(in srgb, var(--surface-elevated) 78%, rgba(15, 107, 114, 0.18));
+  border-color: color-mix(in srgb, var(--teal) 24%, var(--line));
+}
+
+@media (max-width: 960px) {
+  .planning-intelligence-grid,
+  .governance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .governance-item-action,
+  .planning-priority-pill {
+    display: grid;
+  }
+
+  .governance-item-action button {
+    width: 100%;
+    justify-content: center;
+  }
+}

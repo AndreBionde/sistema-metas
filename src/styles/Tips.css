@@ -1,13 +1,15 @@
 .tips-container {
   margin-top: 1.5rem;
-  background: linear-gradient(135deg, rgba(233, 241, 248, 0.98), rgba(218, 230, 240, 0.96));
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0)),
+    var(--surface);
   border-left: 4px solid var(--teal);
   padding: 1.15rem 1.25rem;
   border-radius: 1rem;
-  border: 1px solid rgba(15, 107, 114, 0.16);
+  border: 1px solid var(--line);
   box-shadow:
     0 18px 32px -28px rgba(8, 24, 39, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .tips-title {
@@ -26,6 +28,19 @@
 
 .tips-list li {
   margin-top: 0.35rem;
+}
+
+:root[data-brand="executive"] .tips-container {
+  background:
+    linear-gradient(135deg, rgba(201, 154, 88, 0.1), rgba(255, 255, 255, 0)),
+    var(--surface);
+  border-left-color: var(--sand);
+}
+
+:root[data-theme="dark"] .tips-container {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+    var(--surface);
 }
 
 @media (max-width: 640px) {

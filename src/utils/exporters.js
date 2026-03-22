@@ -242,3 +242,42 @@ export const exportPdfFile = async (appState, fileName) => {
 
   document.save(fileName);
 };
+
+export const exportMarkdownSummary = (appState, currentYear) => {
+  const yearPlan = appState.years[currentYear];
+  const total = calculateGrandTotal(yearPlan.monthlyData);
+  const average = calculateMonthlyAverage(yearPlan.monthlyData);
+  const completion = calculateCompletionRate(yearPlan.goals, yearPlan.monthlyData);
+  const planned = calculatePlannedAnnualTotal(yearPlan.goals);
+
+  return [
+    `# PlanoMeta · Resumo ${currentYear}`,
+    "",
+    `- Total acumulado: ${formatCurrency(total)}`,
+    `- Média mensal: ${formatCurrency(average)}`,
+    `- Planejado anual: ${formatCurrency(planned)}`,
+    `- Conclusão das metas: ${formatPercent(completion)}`,
+    "",
+    "## Metas",
+    "",
+    ...yearPlan.goals.map(
+      (goal) =>
+        `- **${goal.name}** · ${goal.category} · ${goal.status} · alvo ${formatCurrency(
+          goal.targetAmount
+        )} · planejado ${formatCurrency(goal.plannedMonthlyAmount)}`
+    ),
+    "",
+    "## Meses",
+    "",
+    ...yearPlan.monthlyData.map((month, index) => {
+      const totalMonth = Object.values(month.values || {}).reduce(
+        (sum, value) => sum + Number(value || 0),
+        0
+      );
+
+      return `- ${MONTH_NAMES[index]}: ${formatCurrency(totalMonth)}${
+        month.observation ? ` · ${month.observation}` : ""
+      }`;
+    }),
+  ].join("\n");
+};

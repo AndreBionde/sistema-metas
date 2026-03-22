@@ -1,21 +1,35 @@
 export const GOAL_STATUSES = ["active", "paused", "completed"];
+export const GOAL_PRIORITIES = ["high", "medium", "low"];
 export const GOAL_CATEGORIES = [
   "Essenciais",
+  "Moradia",
+  "Saude",
+  "Educacao",
+  "Viagem",
+  "Familia",
   "Reserva",
   "Investimentos",
+  "Carreira",
+  "Negocio",
   "Lazer",
-  "Educacao",
   "Patrimonio",
   "Outros",
 ];
 
 export const GOAL_COLORS = [
   "#3b82f6",
-  "#f59e0b",
-  "#ec4899",
-  "#6366f1",
-  "#14b8a6",
-  "#f97316",
+  "#0f766e",
+  "#e11d48",
+  "#7c3aed",
+  "#0ea5e9",
+  "#ef8a2f",
+  "#16a34a",
+  "#4f46e5",
+  "#b45309",
+  "#059669",
+  "#db2777",
+  "#1d4ed8",
+  "#64748b",
 ];
 
 export const MONTH_NAMES = [
@@ -59,6 +73,14 @@ export const buildDefaultAppState = (yearKey = getCurrentYearKey()) => ({
     lastImportAt: "",
     publicMetrics: {
       planStartedTracked: false,
+    },
+    archivedYears: [],
+    deletedYears: [],
+    activityLog: [],
+    backupLog: [],
+    trash: {
+      goals: [],
+      resets: [],
     },
   },
 });

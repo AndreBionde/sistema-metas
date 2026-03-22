@@ -1,5 +1,9 @@
 import { CalendarClock, DollarSign, Target, TrendingUp } from "lucide-react";
-import { formatCurrency, formatPercent } from "../utils/formatters";
+import {
+  formatCurrency,
+  formatCurrencyAdaptive,
+  formatPercent,
+} from "../utils/formatters";
 import "../styles/StatsCards.css";
 
 const StatsCards = ({
@@ -10,44 +14,63 @@ const StatsCards = ({
   completionRate,
   plannedAnnualTotal,
 }) => {
+  const cards = [
+    {
+      icon: DollarSign,
+      label: "Total geral",
+      value: formatCurrencyAdaptive(totalGeral),
+      fullValue: formatCurrency(totalGeral),
+      helper: "Acumulado em todas as metas",
+      accent: "blue",
+    },
+    {
+      icon: Target,
+      label: "Metas ativas",
+      value: String(activeGoals),
+      fullValue: String(activeGoals),
+      helper: `Conclus\u00e3o: ${formatPercent(completionRate)}`,
+      accent: "orange",
+    },
+    {
+      icon: TrendingUp,
+      label: "Ritmo mensal",
+      value: formatCurrencyAdaptive(monthlyAverage),
+      fullValue: formatCurrency(monthlyAverage),
+      helper: `Base atual: ${filledMonths} ${filledMonths === 1 ? "m\u00eas" : "meses"}`,
+      accent: "green",
+    },
+    {
+      icon: CalendarClock,
+      label: "Planejamento anual",
+      value: formatCurrencyAdaptive(plannedAnnualTotal),
+      fullValue: formatCurrency(plannedAnnualTotal),
+      helper: "Soma dos aportes planejados",
+      accent: "slate",
+    },
+  ];
+
   return (
     <section className="stats-grid" aria-label="Resumo das metas">
-      <div className="stat-card stat-card-blue">
-        <div className="stat-card-header">
-          <DollarSign className="stat-icon" aria-hidden="true" />
-          <span className="stat-label">Total geral</span>
-        </div>
-        <p className="stat-value">{formatCurrency(totalGeral)}</p>
-      </div>
-
-      <div className="stat-card stat-card-orange">
-        <div className="stat-card-header">
-          <Target className="stat-icon" aria-hidden="true" />
-          <span className="stat-label">Metas ativas</span>
-        </div>
-        <p className="stat-value">{activeGoals}</p>
-        <p className="stat-helper">Conclusão: {formatPercent(completionRate)}</p>
-      </div>
-
-      <div className="stat-card stat-card-green">
-        <div className="stat-card-header">
-          <TrendingUp className="stat-icon" aria-hidden="true" />
-          <span className="stat-label">Média dos meses preenchidos</span>
-        </div>
-        <p className="stat-value">{formatCurrency(monthlyAverage)}</p>
-        <p className="stat-helper">
-          Base atual: {filledMonths} {filledMonths === 1 ? "mês" : "meses"}
-        </p>
-      </div>
-
-      <div className="stat-card stat-card-slate">
-        <div className="stat-card-header">
-          <CalendarClock className="stat-icon" aria-hidden="true" />
-          <span className="stat-label">Planejamento anual</span>
-        </div>
-        <p className="stat-value">{formatCurrency(plannedAnnualTotal)}</p>
-        <p className="stat-helper">Soma dos aportes mensais planejados</p>
-      </div>
+      {cards.map(({ icon: Icon, label, value, fullValue, helper, accent }) => (
+        <article key={label} className={`stat-card stat-card-${accent}`}>
+          <div className="stat-card-orbit" aria-hidden="true"></div>
+          <div className="stat-card-header">
+            <div className="stat-icon-wrapper">
+              <Icon className="stat-icon" aria-hidden="true" />
+            </div>
+            <div>
+              <span className="stat-label">{label}</span>
+              <p className="stat-helper">{helper}</p>
+            </div>
+          </div>
+          <div className="stat-card-footer">
+            <p className="stat-value" title={fullValue}>
+              {value}
+            </p>
+            <span className="stat-chip">Painel vivo</span>
+          </div>
+        </article>
+      ))}
     </section>
   );
 };

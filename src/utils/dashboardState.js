@@ -36,6 +36,31 @@ export const getNextAvailableYear = (currentYear, years) => {
   return nextYear;
 };
 
+export const getSuggestedYearOptions = (currentYear, years, spread = 3) => {
+  const baseYear = Number(currentYear);
+  const candidateYears = [];
+
+  for (let offset = -spread; offset <= spread; offset += 1) {
+    if (offset === 0) {
+      continue;
+    }
+
+    const yearKey = String(baseYear + offset);
+
+    if (!years[yearKey]) {
+      candidateYears.push(yearKey);
+    }
+  }
+
+  const nextAvailableYear = getNextAvailableYear(currentYear, years);
+
+  if (!candidateYears.includes(nextAvailableYear)) {
+    candidateYears.push(nextAvailableYear);
+  }
+
+  return candidateYears.sort((leftYear, rightYear) => Number(leftYear) - Number(rightYear));
+};
+
 export const buildUniqueGoalName = (name, goalId, targetGoals) => {
   const trimmedName = (name.trim() || "Meta").slice(0, MAX_GOAL_NAME_LENGTH);
   const takenNames = new Set(
@@ -65,9 +90,37 @@ export const buildGoalDraft = (targetGoals) => ({
   category: GOAL_CATEGORIES[0],
   color: GOAL_COLORS[targetGoals.length % GOAL_COLORS.length],
   status: "active",
+  priority: "medium",
   targetAmount: 0,
   plannedMonthlyAmount: 0,
 });
+
+export const duplicateGoalInPlan = (plan, goalId) => {
+  const sourceGoal = plan.goals.find((goal) => goal.id === goalId);
+
+  if (!sourceGoal) {
+    return plan;
+  }
+
+  const duplicatedGoalId = Date.now();
+  const duplicatedGoal = {
+    ...sourceGoal,
+    id: duplicatedGoalId,
+    name: buildUniqueGoalName(`${sourceGoal.name} cópia`, null, plan.goals),
+    status: sourceGoal.status === "completed" ? "active" : sourceGoal.status,
+  };
+
+  return {
+    goals: [...plan.goals, duplicatedGoal],
+    monthlyData: plan.monthlyData.map((month) => ({
+      ...month,
+      values: {
+        ...month.values,
+        [duplicatedGoalId]: month.values?.[sourceGoal.id] || 0,
+      },
+    })),
+  };
+};
 
 export const removeGoalFromPlan = (plan, goalId) => ({
   goals: plan.goals.filter((goal) => goal.id !== goalId),
@@ -118,4 +171,4 @@ export const buildDashboardMetrics = ({ goals, monthlyData, filteredGoals }) => 
   };
 };
 
-export const buildResetState = () => buildDefaultAppState();
+export const buildResetState = (yearKey) => buildDefaultAppState(yearKey);

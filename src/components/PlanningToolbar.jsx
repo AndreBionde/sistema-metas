@@ -1,10 +1,14 @@
 import { CalendarRange, Filter, Layers3, Plus } from "lucide-react";
+import { getCategoryMeta } from "../utils/categoryMeta";
 import "../styles/PlanningToolbar.css";
 
 const PlanningToolbar = ({
   availableYears,
   currentYear,
   onChangeYear,
+  creatableYears,
+  pendingYear,
+  onChangePendingYear,
   onCreateYear,
   availableCategories,
   categoryFilter,
@@ -29,9 +33,36 @@ const PlanningToolbar = ({
           </select>
         </label>
 
-        <button type="button" className="planning-toolbar-button" onClick={onCreateYear}>
+        <label className="planning-toolbar-field">
+          <span>
+            <Plus className="planning-toolbar-icon" aria-hidden="true" />
+            Adicionar ano
+          </span>
+          <select
+            value={pendingYear}
+            onChange={(event) => onChangePendingYear(event.target.value)}
+            disabled={creatableYears.length === 0}
+          >
+            {creatableYears.length > 0 ? (
+              creatableYears.map((yearKey) => (
+                <option key={yearKey} value={yearKey}>
+                  {yearKey}
+                </option>
+              ))
+            ) : (
+              <option value="">Sem anos disponíveis</option>
+            )}
+          </select>
+        </label>
+
+        <button
+          type="button"
+          className="planning-toolbar-button"
+          onClick={onCreateYear}
+          disabled={!pendingYear}
+        >
           <Plus className="planning-toolbar-icon" aria-hidden="true" />
-          Novo ano
+          Criar ano
         </button>
       </div>
 
@@ -45,11 +76,16 @@ const PlanningToolbar = ({
             value={categoryFilter}
             onChange={(event) => onChangeCategory(event.target.value)}
           >
-            {availableCategories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
+            {availableCategories.map((category) => {
+              const categoryLabel =
+                category === "Todas" ? "Todas" : getCategoryMeta(category).label;
+
+              return (
+                <option key={category} value={category}>
+                  {categoryLabel}
+                </option>
+              );
+            })}
           </select>
         </label>
 
@@ -65,7 +101,7 @@ const PlanningToolbar = ({
             <option value="all">Todos</option>
             <option value="active">Ativas</option>
             <option value="paused">Pausadas</option>
-            <option value="completed">Concluídas</option>
+            <option value="completed">{"Conclu\u00eddas"}</option>
           </select>
         </label>
       </div>

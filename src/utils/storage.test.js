@@ -130,6 +130,28 @@ describe("storage utils", () => {
     expect(parsedState.years["2026"].goals[0].name).toBe("Backup");
   });
 
+  it("keeps deleted years out of the normalized year list", () => {
+    const normalizedState = normalizeAppState({
+      currentYear: "2026",
+      years: {
+        2011: {
+          goals: [{ id: 1, name: "Ano antigo", category: "Reserva" }],
+          monthlyData: [{ month: 1, values: { 1: 100 }, observation: "" }],
+        },
+        2026: {
+          goals: [],
+          monthlyData: [],
+        },
+      },
+      metadata: {
+        deletedYears: ["2011"],
+      },
+    });
+
+    expect(normalizedState.years["2011"]).toBeUndefined();
+    expect(normalizedState.currentYear).toBe("2026");
+  });
+
   it("merges divergent local and remote states without losing independent changes", () => {
     const baseState = normalizeAppState({
       currentYear: "2026",

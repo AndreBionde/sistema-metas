@@ -2,6 +2,7 @@ import {
   buildDashboardMetrics,
   buildUniqueGoalName,
   getNextAvailableYear,
+  getSuggestedYearOptions,
   removeGoalFromPlan,
 } from "./dashboardState";
 
@@ -23,6 +24,15 @@ describe("dashboard state utils", () => {
         2028: {},
       })
     ).toBe("2029");
+  });
+
+  it("suggests missing past and future years around the current year", () => {
+    expect(
+      getSuggestedYearOptions("2026", {
+        2026: {},
+        2027: {},
+      })
+    ).toEqual(["2023", "2024", "2025", "2028", "2029"]);
   });
 
   it("removes a goal from the plan and related monthly values", () => {

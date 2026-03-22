@@ -1,5 +1,7 @@
 .monthly-table-container {
-  background: var(--surface);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0)),
+    var(--surface);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -7,9 +9,15 @@
   backdrop-filter: blur(14px);
 }
 
+:root[data-theme="dark"] .monthly-table-container {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+    var(--surface);
+}
+
 .monthly-table-header {
   padding: 1.5rem;
-  background: linear-gradient(135deg, #0d314c, #147082);
+  background: linear-gradient(135deg, var(--hero-start), rgba(15, 107, 114, 0.92));
 }
 
 .monthly-table-title {
@@ -20,12 +28,63 @@
 
 .monthly-table-subtitle {
   margin-top: 0.35rem;
-  color: rgba(247, 251, 253, 0.76);
+  color: rgba(247, 251, 253, 0.78);
 }
 
 .table-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.monthly-table-empty {
+  display: grid;
+  gap: 0.8rem;
+  justify-items: start;
+  padding: 1.5rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0)),
+    transparent;
+}
+
+.monthly-table-empty-visual {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  background: rgba(15, 107, 114, 0.12);
+  color: var(--teal);
+}
+
+.monthly-table-empty strong {
+  color: var(--navy-strong);
+  font-size: 1.1rem;
+}
+
+.monthly-table-empty p {
+  color: var(--ink-soft);
+  line-height: 1.6;
+  max-width: 34rem;
+}
+
+.monthly-table-empty-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.8rem;
+  padding: 0.74rem 1rem;
+  border: none;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, var(--navy), var(--teal));
+  color: #f8fafc;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.monthly-table-empty-icon,
+.monthly-table-empty-arrow {
+  width: 1rem;
+  height: 1rem;
 }
 
 .monthly-table {
@@ -34,7 +93,7 @@
 }
 
 .monthly-table thead {
-  background-color: rgba(16, 33, 49, 0.05);
+  background-color: var(--table-head);
 }
 
 .monthly-table th {
@@ -49,7 +108,7 @@
   text-align: left;
   position: sticky;
   left: 0;
-  background-color: rgba(16, 33, 49, 0.05);
+  background-color: var(--table-head);
   z-index: 10;
 }
 
@@ -86,7 +145,7 @@
 
 .th-total {
   text-align: right;
-  background-color: rgba(17, 52, 79, 0.08);
+  background-color: var(--table-total);
 }
 
 .th-obs {
@@ -95,15 +154,16 @@
 }
 
 .monthly-table tbody tr {
-  background-color: rgba(255, 255, 255, 0.58);
+  background-color: var(--table-row-even);
+  transition: background-color 0.2s ease;
 }
 
 .monthly-table tbody tr:nth-child(even) {
-  background-color: rgba(16, 33, 49, 0.025);
+  background-color: var(--table-row-odd);
 }
 
 .monthly-table tbody tr:hover {
-  background-color: rgba(15, 107, 114, 0.045);
+  background-color: var(--table-row-hover);
 }
 
 .row-empty {
@@ -121,11 +181,11 @@
 }
 
 .td-even {
-  background-color: rgba(255, 255, 255, 0.62);
+  background-color: var(--table-row-even);
 }
 
 .td-odd {
-  background-color: rgba(16, 33, 49, 0.025);
+  background-color: var(--table-row-odd);
 }
 
 .month-cell {
@@ -145,17 +205,24 @@
 .value-input {
   width: 100%;
   text-align: right;
-  padding: 0.48rem 0.62rem;
+  padding: 0.56rem 0.72rem;
   border: 1px solid var(--line-strong);
-  border-radius: 0.6rem;
-  font-size: 0.875rem;
+  border-radius: 0.75rem;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
   outline: none;
-  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  background: var(--input-bg);
   color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+:root[data-theme="dark"] .value-input,
+:root[data-theme="dark"] .observation-input {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .value-input:focus {
-  border-color: rgba(15, 107, 114, 0.34);
+  border-color: var(--ring);
   box-shadow: 0 0 0 3px rgba(15, 107, 114, 0.07);
 }
 
@@ -164,7 +231,9 @@
   text-align: right;
   font-weight: 700;
   color: var(--navy);
-  background-color: rgba(17, 52, 79, 0.08);
+  background-color: var(--table-total);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .td-observation {
@@ -173,22 +242,35 @@
 
 .observation-input {
   width: 100%;
-  padding: 0.48rem 0.62rem;
+  padding: 0.56rem 0.72rem;
   border: 1px solid var(--line-strong);
-  border-radius: 0.6rem;
+  border-radius: 0.75rem;
   font-size: 0.875rem;
   outline: none;
-  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  background: var(--input-bg);
   color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .observation-input:focus {
-  border-color: rgba(15, 107, 114, 0.34);
+  border-color: var(--ring);
   box-shadow: 0 0 0 3px rgba(15, 107, 114, 0.07);
 }
 
+.value-input::placeholder,
+.observation-input::placeholder {
+  color: var(--ink-faint);
+  opacity: 0.62;
+  transition: opacity 0.18s ease, color 0.18s ease;
+}
+
+.value-input:focus::placeholder,
+.observation-input:focus::placeholder {
+  opacity: 0;
+}
+
 .row-total {
-  background: linear-gradient(to right, rgba(17, 52, 79, 0.12), rgba(15, 107, 114, 0.08));
+  background: var(--table-footer);
   font-weight: 700;
 }
 
@@ -198,7 +280,7 @@
   color: var(--ink);
   position: sticky;
   left: 0;
-  background-color: rgba(17, 52, 79, 0.12);
+  background-color: var(--table-total);
   z-index: 10;
 }
 
@@ -207,6 +289,8 @@
   text-align: right;
   font-size: 0.875rem;
   color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .td-grand-total {
@@ -214,7 +298,20 @@
   text-align: right;
   font-size: 1.125rem;
   color: var(--navy-strong);
-  background-color: rgba(17, 52, 79, 0.12);
+  background-color: var(--table-total);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.value-input::-webkit-outer-spin-button,
+.value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.value-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 @media (max-width: 640px) {
@@ -256,6 +353,6 @@
 
   .value-input,
   .observation-input {
-    font-size: 0.83rem;
+    font-size: 0.78rem;
   }
 }

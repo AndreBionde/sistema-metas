@@ -2,7 +2,9 @@
   margin-bottom: 1.5rem;
   padding: 1.35rem 1.5rem;
   border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, rgba(15, 107, 114, 0.12), rgba(255, 255, 255, 0.92));
+  background:
+    linear-gradient(135deg, rgba(15, 107, 114, 0.12), rgba(255, 255, 255, 0.04)),
+    var(--surface);
   border: 1px solid rgba(15, 107, 114, 0.18);
   box-shadow: var(--shadow-md);
 }
@@ -48,12 +50,29 @@
   margin-top: 1rem;
   border: none;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--navy), #164a6e);
+  background: linear-gradient(135deg, var(--navy), var(--teal));
   color: #f8fafc;
   padding: 0.75rem 1rem;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 18px 26px -24px rgba(17, 52, 79, 0.62);
+}
+
+:root[data-brand="executive"] .onboarding-panel {
+  background:
+    linear-gradient(135deg, rgba(201, 154, 88, 0.12), rgba(255, 255, 255, 0.04)),
+    var(--surface);
+  border-color: rgba(201, 154, 88, 0.2);
+}
+
+:root[data-brand="executive"] .onboarding-button {
+  background: linear-gradient(135deg, var(--sand), #9e7338);
+}
+
+:root[data-theme="dark"] .onboarding-panel {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+    var(--surface);
 }
 
 .onboarding-button:active {

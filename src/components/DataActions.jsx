@@ -7,6 +7,7 @@ const DataActions = ({
   onExportCsv,
   onExportXlsx,
   onExportPdf,
+  onExportSummary,
   onExportJson,
   onImportJson,
   onReset,
@@ -31,7 +32,7 @@ const DataActions = ({
   };
 
   return (
-    <section className="data-actions-container" aria-label="Ações de dados">
+    <section className="data-actions-container" aria-label={"A\u00e7\u00f5es de dados"}>
       <div className="data-actions-group">
         <button type="button" className="data-action-button" onClick={onExportCsv}>
           <FileSpreadsheet className="data-action-icon" aria-hidden="true" />
@@ -44,6 +45,10 @@ const DataActions = ({
         <button type="button" className="data-action-button" onClick={onExportPdf}>
           <FileText className="data-action-icon" aria-hidden="true" />
           Exportar PDF
+        </button>
+        <button type="button" className="data-action-button" onClick={onExportSummary}>
+          <FileText className="data-action-icon" aria-hidden="true" />
+          Exportar resumo
         </button>
         <button type="button" className="data-action-button" onClick={onExportJson}>
           <FileText className="data-action-icon" aria-hidden="true" />
@@ -78,17 +83,23 @@ const DataActions = ({
       />
 
       <div className="data-actions-meta">
-        <p className="data-actions-help">
-          Última exportação de relatório: {formatDateTime(lastExportAt)}
-        </p>
-        <p className="data-actions-help">
-          Última restauração de backup: {formatDateTime(lastImportAt)}
-        </p>
+        <div className="data-actions-info-card">
+          <span>{"\u00daltima exporta\u00e7\u00e3o"}</span>
+          <strong>{formatDateTime(lastExportAt)}</strong>
+        </div>
+        <div className="data-actions-info-card">
+          <span>{"\u00daltima restaura\u00e7\u00e3o"}</span>
+          <strong>{formatDateTime(lastImportAt)}</strong>
+        </div>
+        <div className="data-actions-info-card">
+          <span>{"Recupera\u00e7\u00e3o"}</span>
+          <strong>{"Backup JSON restaur\u00e1vel"}</strong>
+        </div>
       </div>
 
       <p className="data-actions-policy">
-        Use o backup JSON como cópia restaurável da sua conta. CSV, XLSX e PDF servem
-        como relatórios, não como recuperação completa.
+        {"Use o backup JSON como c\u00f3pia restaur\u00e1vel da sua conta. CSV, XLSX e PDF servem "}
+        {"como relat\u00f3rios, n\u00e3o como recupera\u00e7\u00e3o completa."}
       </p>
 
       {notice ? (

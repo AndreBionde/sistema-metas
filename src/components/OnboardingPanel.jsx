@@ -7,7 +7,7 @@ const OnboardingPanel = ({ onDismiss }) => {
       <div>
         <p className="onboarding-kicker">
           <Sparkles className="onboarding-icon" aria-hidden="true" />
-          Começo rápido
+          {"Come\u00e7o r\u00e1pido"}
         </p>
         <h2 className="onboarding-title">Monte sua rotina financeira em 3 passos</h2>
       </div>
@@ -19,11 +19,11 @@ const OnboardingPanel = ({ onDismiss }) => {
         </p>
         <p>
           <CheckCircle2 className="onboarding-step-icon" aria-hidden="true" />
-          Atualize os meses realizados para acompanhar progresso e projeções.
+          {"Atualize os meses realizados para acompanhar progresso e proje\u00e7\u00f5es."}
         </p>
         <p>
           <Download className="onboarding-step-icon" aria-hidden="true" />
-          Gere relatórios em PDF, CSV ou XLSX sempre que quiser um resumo detalhado.
+          {"Gere relat\u00f3rios em PDF, CSV ou XLSX sempre que quiser um resumo detalhado."}
         </p>
       </div>
 

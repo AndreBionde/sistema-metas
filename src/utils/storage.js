@@ -1,6 +1,7 @@
 import {
   GOAL_CATEGORIES,
   GOAL_COLORS,
+  GOAL_PRIORITIES,
   GOAL_STATUSES,
   buildDefaultAppState,
   buildDefaultYearPlan,
@@ -10,6 +11,10 @@ import {
 
 const MAX_OBSERVATION_LENGTH = 240;
 const MAX_GOAL_NAME_LENGTH = 80;
+const MAX_ACTIVITY_LOG_ITEMS = 80;
+const MAX_BACKUP_LOG_ITEMS = 40;
+const MAX_TRASH_GOAL_ITEMS = 24;
+const MAX_TRASH_RESET_ITEMS = 6;
 
 const sanitizeNumber = (value) => {
   const parsedValue = Number(value);
@@ -30,8 +35,68 @@ const sanitizeGoal = (goal, index) => ({
       ? goal.color
       : GOAL_COLORS[index % GOAL_COLORS.length],
   status: GOAL_STATUSES.includes(goal?.status) ? goal.status : "active",
+  priority: GOAL_PRIORITIES.includes(goal?.priority) ? goal.priority : "medium",
   targetAmount: sanitizeNumber(goal?.targetAmount),
   plannedMonthlyAmount: sanitizeNumber(goal?.plannedMonthlyAmount),
+});
+
+const sanitizeLogEntry = (entry, index) => ({
+  id:
+    typeof entry?.id === "string" && entry.id
+      ? entry.id
+      : `log-${Date.now()}-${index}`,
+  type: typeof entry?.type === "string" ? entry.type : "activity",
+  title: typeof entry?.title === "string" ? entry.title.slice(0, 120) : "Ação registrada",
+  description:
+    typeof entry?.description === "string" ? entry.description.slice(0, 240) : "",
+  yearKey: typeof entry?.yearKey === "string" ? entry.yearKey : "",
+  occurredAt:
+    typeof entry?.occurredAt === "string" && entry.occurredAt
+      ? entry.occurredAt
+      : new Date().toISOString(),
+});
+
+const sanitizeTrashGoal = (entry, index) => ({
+  id:
+    typeof entry?.id === "string" && entry.id
+      ? entry.id
+      : `trash-goal-${Date.now()}-${index}`,
+  yearKey: typeof entry?.yearKey === "string" ? entry.yearKey : getCurrentYearKey(),
+  goal: sanitizeGoal(entry?.goal, index),
+  values: sanitizeMonthlyValues(entry?.values),
+  deletedAt:
+    typeof entry?.deletedAt === "string" && entry.deletedAt
+      ? entry.deletedAt
+      : new Date().toISOString(),
+});
+
+const sanitizeSnapshotState = (snapshot) => {
+  const normalizedSnapshot = normalizeAppState(snapshot);
+
+  return {
+    ...normalizedSnapshot,
+    metadata: {
+      ...normalizedSnapshot.metadata,
+      trash: {
+        goals: [],
+        resets: [],
+      },
+      activityLog: [],
+      backupLog: [],
+    },
+  };
+};
+
+const sanitizeTrashReset = (entry, index) => ({
+  id:
+    typeof entry?.id === "string" && entry.id
+      ? entry.id
+      : `trash-reset-${Date.now()}-${index}`,
+  snapshot: sanitizeSnapshotState(entry?.snapshot),
+  deletedAt:
+    typeof entry?.deletedAt === "string" && entry.deletedAt
+      ? entry.deletedAt
+      : new Date().toISOString(),
 });
 
 const sanitizeMonthlyValues = (values) => {
@@ -82,9 +147,42 @@ const sanitizeMetadata = (metadata) => ({
   publicMetrics: {
     planStartedTracked: Boolean(metadata?.publicMetrics?.planStartedTracked),
   },
+  archivedYears: Array.isArray(metadata?.archivedYears)
+    ? metadata.archivedYears.filter((yearKey) => typeof yearKey === "string").slice(0, 24)
+    : [],
+  deletedYears: Array.isArray(metadata?.deletedYears)
+    ? metadata.deletedYears.filter((yearKey) => typeof yearKey === "string").slice(0, 48)
+    : [],
+  activityLog: Array.isArray(metadata?.activityLog)
+    ? metadata.activityLog
+        .map(sanitizeLogEntry)
+        .sort((leftEntry, rightEntry) => new Date(rightEntry.occurredAt) - new Date(leftEntry.occurredAt))
+        .slice(0, MAX_ACTIVITY_LOG_ITEMS)
+    : [],
+  backupLog: Array.isArray(metadata?.backupLog)
+    ? metadata.backupLog
+        .map(sanitizeLogEntry)
+        .sort((leftEntry, rightEntry) => new Date(rightEntry.occurredAt) - new Date(leftEntry.occurredAt))
+        .slice(0, MAX_BACKUP_LOG_ITEMS)
+    : [],
+  trash: {
+    goals: Array.isArray(metadata?.trash?.goals)
+      ? metadata.trash.goals
+          .map(sanitizeTrashGoal)
+          .sort((leftEntry, rightEntry) => new Date(rightEntry.deletedAt) - new Date(leftEntry.deletedAt))
+          .slice(0, MAX_TRASH_GOAL_ITEMS)
+      : [],
+    resets: Array.isArray(metadata?.trash?.resets)
+      ? metadata.trash.resets
+          .map(sanitizeTrashReset)
+          .sort((leftEntry, rightEntry) => new Date(rightEntry.deletedAt) - new Date(leftEntry.deletedAt))
+          .slice(0, MAX_TRASH_RESET_ITEMS)
+      : [],
+  },
 });
 
 const normalizeModernAppState = (state) => {
+  const metadata = sanitizeMetadata(state?.metadata);
   const currentYear = String(state?.currentYear || getCurrentYearKey());
   const sourceYears =
     state?.years && typeof state.years === "object" ? state.years : {};
@@ -92,19 +190,28 @@ const normalizeModernAppState = (state) => {
   const years =
     yearsEntries.length > 0
       ? yearsEntries.reduce((normalizedYears, [yearKey, plan]) => {
+          if (metadata.deletedYears.includes(String(yearKey))) {
+            return normalizedYears;
+          }
+
           normalizedYears[String(yearKey)] = sanitizeYearPlan(plan);
           return normalizedYears;
         }, {})
       : { [currentYear]: buildDefaultYearPlan() };
 
-  if (!years[currentYear]) {
-    years[currentYear] = buildDefaultYearPlan();
+  const resolvedCurrentYear = years[currentYear]
+    ? currentYear
+    : Object.keys(years).sort((leftYear, rightYear) => Number(rightYear) - Number(leftYear))[0] ||
+      currentYear;
+
+  if (!years[resolvedCurrentYear]) {
+    years[resolvedCurrentYear] = buildDefaultYearPlan();
   }
 
   return {
-    currentYear,
+    currentYear: resolvedCurrentYear,
     years,
-    metadata: sanitizeMetadata(state?.metadata),
+    metadata,
   };
 };
 
@@ -147,6 +254,48 @@ export const cloneAppState = (state) =>
 
 export const parseImportedAppState = (rawContent) =>
   normalizeAppState(JSON.parse(rawContent));
+
+const mergeLogsById = (...collections) =>
+  Array.from(
+    collections
+      .flat()
+      .map(sanitizeLogEntry)
+      .reduce((entryMap, entry) => {
+        if (!entryMap.has(entry.id)) {
+          entryMap.set(entry.id, entry);
+        }
+        return entryMap;
+      }, new Map())
+      .values()
+  );
+
+const mergeTrashGoalsById = (...collections) =>
+  Array.from(
+    collections
+      .flat()
+      .map(sanitizeTrashGoal)
+      .reduce((entryMap, entry) => {
+        if (!entryMap.has(entry.id)) {
+          entryMap.set(entry.id, entry);
+        }
+        return entryMap;
+      }, new Map())
+      .values()
+  );
+
+const mergeTrashResetsById = (...collections) =>
+  Array.from(
+    collections
+      .flat()
+      .map(sanitizeTrashReset)
+      .reduce((entryMap, entry) => {
+        if (!entryMap.has(entry.id)) {
+          entryMap.set(entry.id, entry);
+        }
+        return entryMap;
+      }, new Map())
+      .values()
+  );
 
 const areEqual = (leftValue, rightValue) =>
   JSON.stringify(leftValue ?? null) === JSON.stringify(rightValue ?? null);
@@ -356,13 +505,21 @@ export const mergeAppStates = ({ baseState, remoteState, localState }) => {
   const normalizedBaseState = normalizeAppState(baseState);
   const normalizedRemoteState = normalizeAppState(remoteState);
   const normalizedLocalState = normalizeAppState(localState);
+  const deletedYearKeys = [
+    ...new Set([
+      ...(normalizedBaseState.metadata?.deletedYears || []),
+      ...(normalizedRemoteState.metadata?.deletedYears || []),
+      ...(normalizedLocalState.metadata?.deletedYears || []),
+    ]),
+  ];
+
   const yearKeys = [
     ...new Set([
       ...Object.keys(normalizedBaseState.years || {}),
       ...Object.keys(normalizedRemoteState.years || {}),
       ...Object.keys(normalizedLocalState.years || {}),
     ]),
-  ];
+  ].filter((yearKey) => !deletedYearKeys.includes(yearKey));
 
   let conflictCount = 0;
   const years = yearKeys.reduce((nextYears, yearKey) => {
@@ -396,6 +553,36 @@ export const mergeAppStates = ({ baseState, remoteState, localState }) => {
         normalizedRemoteState.metadata?.publicMetrics?.planStartedTracked ||
         normalizedBaseState.metadata?.publicMetrics?.planStartedTracked,
     },
+    archivedYears: [
+      ...new Set([
+        ...(normalizedBaseState.metadata?.archivedYears || []),
+        ...(normalizedRemoteState.metadata?.archivedYears || []),
+        ...(normalizedLocalState.metadata?.archivedYears || []),
+      ]),
+    ],
+    deletedYears: deletedYearKeys,
+    activityLog: mergeLogsById(
+      normalizedBaseState.metadata?.activityLog || [],
+      normalizedRemoteState.metadata?.activityLog || [],
+      normalizedLocalState.metadata?.activityLog || []
+    ),
+    backupLog: mergeLogsById(
+      normalizedBaseState.metadata?.backupLog || [],
+      normalizedRemoteState.metadata?.backupLog || [],
+      normalizedLocalState.metadata?.backupLog || []
+    ),
+    trash: {
+      goals: mergeTrashGoalsById(
+        normalizedBaseState.metadata?.trash?.goals || [],
+        normalizedRemoteState.metadata?.trash?.goals || [],
+        normalizedLocalState.metadata?.trash?.goals || []
+      ),
+      resets: mergeTrashResetsById(
+        normalizedBaseState.metadata?.trash?.resets || [],
+        normalizedRemoteState.metadata?.trash?.resets || [],
+        normalizedLocalState.metadata?.trash?.resets || []
+      ),
+    },
   });
 
   const currentYearResult = mergeScalar({
@@ -405,9 +592,15 @@ export const mergeAppStates = ({ baseState, remoteState, localState }) => {
   });
   conflictCount += currentYearResult.conflict ? 1 : 0;
 
+  const resolvedCurrentYear =
+    currentYearResult.value && years[currentYearResult.value]
+      ? currentYearResult.value
+      : Object.keys(years).sort((leftYear, rightYear) => Number(rightYear) - Number(leftYear))[0] ||
+        normalizedLocalState.currentYear;
+
   return {
     state: normalizeModernAppState({
-      currentYear: currentYearResult.value,
+      currentYear: resolvedCurrentYear,
       years,
       metadata,
     }),

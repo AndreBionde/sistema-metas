@@ -4,6 +4,7 @@ import "./index.css";
 import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { appConfig, isProduction } from "./config/appConfig";
 import { initMonitoring, reportWebVitals } from "./services/monitoring";
 
@@ -13,11 +14,13 @@ initMonitoring();
 
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </AuthProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );
 

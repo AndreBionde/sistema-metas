@@ -12,7 +12,7 @@ const PWAInstructions = ({
 
       {!pwaEnabled ? (
         <p className="pwa-status">
-          O modo aplicativo está desativado nesta configuração do sistema.
+          {"O modo aplicativo est\u00e1 desativado nesta configura\u00e7\u00e3o do sistema."}
         </p>
       ) : null}
 
@@ -33,8 +33,8 @@ const PWAInstructions = ({
           <strong>iPhone/iPad</strong>
           <ol className="pwa-list">
             <li>Abra o sistema no Safari.</li>
-            <li>Toque no ícone de compartilhar.</li>
-            <li>Selecione "Adicionar à Tela Inicial".</li>
+            <li>{"Toque no \u00edcone de compartilhar."}</li>
+            <li>{"Selecione \"Adicionar \u00e0 Tela Inicial\"."}</li>
           </ol>
         </div>
         <div className="pwa-section">
@@ -42,7 +42,7 @@ const PWAInstructions = ({
           <ol className="pwa-list">
             <li>Abra o sistema no Chrome.</li>
             <li>Use o menu do navegador.</li>
-            <li>Selecione "Instalar app" ou "Adicionar à tela inicial".</li>
+            <li>{"Selecione \"Instalar app\" ou \"Adicionar \u00e0 tela inicial\"."}</li>
           </ol>
         </div>
       </div>

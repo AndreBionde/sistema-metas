@@ -108,13 +108,14 @@ const DashboardApp = ({ user, onSignOut }) => {
       setStatusNotice("Aplicativo instalado com sucesso neste dispositivo."),
   });
 
+  const deletedYears = appState.metadata?.deletedYears || [];
   const currentYear = appState.currentYear;
   const currentPlan = getYearPlan(appState, currentYear);
   const goals = currentPlan.goals;
   const monthlyData = currentPlan.monthlyData;
-  const availableYears = Object.keys(appState.years).sort(
-    (leftYear, rightYear) => Number(rightYear) - Number(leftYear)
-  );
+  const availableYears = Object.keys(appState.years)
+    .filter((yearKey) => !deletedYears.includes(yearKey))
+    .sort((leftYear, rightYear) => Number(rightYear) - Number(leftYear));
   const creatableYears = useMemo(
     () => getSuggestedYearOptions(currentYear, appState.years),
     [currentYear, appState.years]
@@ -750,15 +751,12 @@ const DashboardApp = ({ user, onSignOut }) => {
           const nextYears = { ...currentState.years };
           delete nextYears[currentYear];
 
-          return {
+          return cloneAppState({
             ...currentState,
             currentYear: getReplacementYearKey(currentYear, nextYears),
             years: nextYears,
             metadata: {
               ...currentState.metadata,
-              archivedYears: (currentState.metadata?.archivedYears || []).filter(
-                (yearKey) => yearKey !== currentYear
-              ),
               deletedYears: [
                 currentYear,
                 ...((currentState.metadata?.deletedYears || []).filter(
@@ -766,7 +764,7 @@ const DashboardApp = ({ user, onSignOut }) => {
                 )),
               ].slice(0, 48),
             },
-          };
+          });
         });
 
         setStatusNotice(`Ano ${currentYear} removido da conta.`);

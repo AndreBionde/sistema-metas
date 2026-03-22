@@ -87,15 +87,14 @@ test("exporta e restaura backup json", async ({ page }) => {
     page.getByRole("button", { name: "Backup JSON" }).click(),
   ]);
 
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Resetar tudo" }).click();
+  await page.getByRole("button", { name: "Resetar conta" }).click();
 
-  await expect(page.getByText(/Sua carteira de metas começa vazia/i)).toBeVisible();
+  await expect(page.getByText(/Sua carteira de metas ainda está em branco/i)).toBeVisible();
 
-  page.once("dialog", (dialog) => dialog.accept());
-  await page
-    .locator('input[type="file"][accept="application/json,.json"]')
-    .setInputFiles(await download.path());
+  const restoreInput = page.locator('input[type="file"][accept="application/json,.json"]');
+  await restoreInput.setInputFiles(await download.path());
+  await page.getByRole("button", { name: "Restaurar agora" }).click();
 
   await expect(page.locator('input[value="Meta backup"]')).toBeVisible({
     timeout: 15000,

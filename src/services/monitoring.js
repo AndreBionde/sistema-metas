@@ -1,11 +1,22 @@
-import * as Sentry from "@sentry/react";
-
 const analyticsId = process.env.REACT_APP_ANALYTICS_ID || "";
 const sentryDsn = process.env.REACT_APP_SENTRY_DSN || "";
 const isProduction = process.env.NODE_ENV === "production";
 
 let monitoringStarted = false;
 let analyticsStarted = false;
+let sentryModulePromise = null;
+
+const loadSentry = async () => {
+  if (!sentryDsn) {
+    return null;
+  }
+
+  if (!sentryModulePromise) {
+    sentryModulePromise = import("@sentry/react");
+  }
+
+  return sentryModulePromise;
+};
 
 const ensureAnalyticsTag = () => {
   if (!analyticsId || typeof window === "undefined" || !window.document || window.gtag) {
@@ -36,13 +47,21 @@ export const initMonitoring = () => {
   monitoringStarted = true;
 
   if (sentryDsn) {
-    Sentry.init({
-      dsn: sentryDsn,
-      enabled: true,
-      environment: process.env.NODE_ENV,
-      tracesSampleRate: 0,
-      integrations: [],
-    });
+    loadSentry()
+      .then((Sentry) => {
+        if (!Sentry) {
+          return;
+        }
+
+        Sentry.init({
+          dsn: sentryDsn,
+          enabled: true,
+          environment: process.env.NODE_ENV,
+          tracesSampleRate: 0,
+          integrations: [],
+        });
+      })
+      .catch(() => undefined);
   }
 
   if (analyticsId) {
@@ -53,14 +72,22 @@ export const initMonitoring = () => {
 
 export const identifyMonitoringUser = (user) => {
   if (sentryDsn) {
-    if (user) {
-      Sentry.setUser({
-        id: user.uid,
-        email: user.email || undefined,
-      });
-    } else {
-      Sentry.setUser(null);
-    }
+    loadSentry()
+      .then((Sentry) => {
+        if (!Sentry) {
+          return;
+        }
+
+        if (user) {
+          Sentry.setUser({
+            id: user.uid,
+            email: user.email || undefined,
+          });
+        } else {
+          Sentry.setUser(null);
+        }
+      })
+      .catch(() => undefined);
   }
 
   if (analyticsStarted && window.gtag) {
@@ -76,9 +103,17 @@ export const captureAppError = (error, context = {}) => {
   }
 
   if (sentryDsn) {
-    Sentry.captureException(error, {
-      extra: context,
-    });
+    loadSentry()
+      .then((Sentry) => {
+        if (!Sentry) {
+          return;
+        }
+
+        Sentry.captureException(error, {
+          extra: context,
+        });
+      })
+      .catch(() => undefined);
   } else if (!isProduction) {
     console.error("[monitoring] captured error", error, context);
   }
@@ -94,12 +129,20 @@ export const trackEvent = (eventName, params = {}) => {
   }
 
   if (sentryDsn) {
-    Sentry.addBreadcrumb({
-      category: "ui.event",
-      level: "info",
-      message: eventName,
-      data: params,
-    });
+    loadSentry()
+      .then((Sentry) => {
+        if (!Sentry) {
+          return;
+        }
+
+        Sentry.addBreadcrumb({
+          category: "ui.event",
+          level: "info",
+          message: eventName,
+          data: params,
+        });
+      })
+      .catch(() => undefined);
   }
 };
 

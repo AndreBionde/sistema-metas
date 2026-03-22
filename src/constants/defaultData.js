@@ -74,7 +74,6 @@ export const buildDefaultAppState = (yearKey = getCurrentYearKey()) => ({
     publicMetrics: {
       planStartedTracked: false,
     },
-    archivedYears: [],
     deletedYears: [],
     activityLog: [],
     backupLog: [],

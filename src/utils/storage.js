@@ -147,9 +147,6 @@ const sanitizeMetadata = (metadata) => ({
   publicMetrics: {
     planStartedTracked: Boolean(metadata?.publicMetrics?.planStartedTracked),
   },
-  archivedYears: Array.isArray(metadata?.archivedYears)
-    ? metadata.archivedYears.filter((yearKey) => typeof yearKey === "string").slice(0, 24)
-    : [],
   deletedYears: Array.isArray(metadata?.deletedYears)
     ? metadata.deletedYears.filter((yearKey) => typeof yearKey === "string").slice(0, 48)
     : [],
@@ -553,13 +550,6 @@ export const mergeAppStates = ({ baseState, remoteState, localState }) => {
         normalizedRemoteState.metadata?.publicMetrics?.planStartedTracked ||
         normalizedBaseState.metadata?.publicMetrics?.planStartedTracked,
     },
-    archivedYears: [
-      ...new Set([
-        ...(normalizedBaseState.metadata?.archivedYears || []),
-        ...(normalizedRemoteState.metadata?.archivedYears || []),
-        ...(normalizedLocalState.metadata?.archivedYears || []),
-      ]),
-    ],
     deletedYears: deletedYearKeys,
     activityLog: mergeLogsById(
       normalizedBaseState.metadata?.activityLog || [],

@@ -11,8 +11,17 @@ import {
   createAppStateSignature,
   mergeAppStates,
 } from "../utils/storage";
+import { captureAppError } from "../services/monitoring";
 
 const INITIAL_SYNC_TIMEOUT_MS = 8000;
+
+const reportSyncError = (label, error) => {
+  captureAppError(error, { scope: "cloud_sync", label });
+
+  if (process.env.NODE_ENV !== "production") {
+    console.error(`[sync] ${label}`, error);
+  }
+};
 
 const createSessionId = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -215,7 +224,7 @@ export const useCloudPlanState = (user) => {
         });
         completeReadyState("Conta conectada. Seus dados agora ficam salvos na nuvem.");
       } catch (error) {
-        console.error("[sync] initial cloud document error", error);
+        reportSyncError("initial cloud document error", error);
         handleSyncFailure(
           error,
           "Não foi possível inicializar o salvamento da sua conta na nuvem.",
@@ -240,7 +249,7 @@ export const useCloudPlanState = (user) => {
           initializeMissingCloudDocument();
         },
         onError: (error) => {
-          console.error("[sync] realtime subscription error", error);
+          reportSyncError("realtime subscription error", error);
           handleSyncFailure(
             error,
             "Não foi possível carregar os dados da nuvem. Verifique sua conexão e tente novamente.",
@@ -265,7 +274,7 @@ export const useCloudPlanState = (user) => {
 
         await initializeMissingCloudDocument();
       } catch (error) {
-        console.error("[sync] initial getDoc error", error);
+        reportSyncError("initial getDoc error", error);
         handleSyncFailure(
           error,
           "Não foi possível carregar os dados da nuvem. Verifique sua conexão e tente novamente.",
@@ -341,7 +350,7 @@ export const useCloudPlanState = (user) => {
         setSyncStatus("synced");
         setSaveError("");
       } catch (error) {
-        console.error("[sync] save error", error);
+        reportSyncError("save error", error);
 
         if (error?.code === "cloud/conflict" && error?.remoteState) {
           const mergeResult = mergeAppStates({

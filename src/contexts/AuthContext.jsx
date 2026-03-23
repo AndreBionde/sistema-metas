@@ -138,6 +138,34 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
+      if (error?.code === "auth/app-not-authorized") {
+        setAuthError(
+          "Este domínio não está autorizado a usar a configuração atual do Firebase."
+        );
+        return;
+      }
+
+      if (error?.code === "auth/web-storage-unsupported") {
+        setAuthError(
+          "O navegador bloqueou o armazenamento necessário para o login. Libere cookies e tente novamente."
+        );
+        return;
+      }
+
+      if (error?.code === "auth/network-request-failed") {
+        setAuthError(
+          "A conexão com o Google/Firebase falhou neste ambiente. Revise o domínio publicado, a CSP e bloqueios do navegador."
+        );
+        return;
+      }
+
+      if (error?.code === "auth/internal-error") {
+        setAuthError(
+          "O Firebase iniciou o login, mas encontrou um erro interno. Revise domínio autorizado, CSP e a configuração do Google no projeto."
+        );
+        return;
+      }
+
       setAuthError("Não foi possível iniciar o login com Google neste momento.");
     }
   };

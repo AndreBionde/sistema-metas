@@ -71,9 +71,6 @@ export const buildDefaultAppState = (yearKey = getCurrentYearKey()) => ({
     onboardingCompleted: false,
     lastExportAt: "",
     lastImportAt: "",
-    publicMetrics: {
-      planStartedTracked: false,
-    },
     deletedYears: [],
     activityLog: [],
     backupLog: [],

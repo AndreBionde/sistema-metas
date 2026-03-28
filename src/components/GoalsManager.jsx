@@ -19,7 +19,6 @@ const GoalsManager = ({
   calculateGoalTotal,
   calculateGoalProgress,
   calculateGoalProjection,
-  calculateIdealContribution,
   calculateGoalRisk,
 }) => {
   return (
@@ -55,7 +54,6 @@ const GoalsManager = ({
               onUpdatePlannedAmount={onUpdateGoalPlannedAmount}
               onDuplicate={onDuplicateGoal}
               onUpdatePriority={onUpdateGoalPriority}
-              idealContribution={calculateIdealContribution(goal.id)}
               riskLevel={calculateGoalRisk(goal.id)}
             />
           ))}

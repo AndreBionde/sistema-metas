@@ -311,6 +311,12 @@
   .header-container {
     padding: 1.2rem 1rem;
     border-radius: 1.2rem;
+    box-shadow: 0 14px 28px -24px rgba(8, 24, 39, 0.24);
+  }
+
+  .header-container::before,
+  .header-container::after {
+    display: none;
   }
 
   .header-title-row {

@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import {
+  calculateCyclePlannedMonthlyTarget,
   calculateCompletionRate,
   calculateGoalHealthSummary,
-  calculatePlannedMonthlyTotal,
   calculatePlannedVsActual,
   buildMonthlyTotalsSeries,
 } from "../utils/calculations";
@@ -33,7 +33,7 @@ const InsightsPanel = ({ goals, monthlyData }) => {
     [goals, monthlyData]
   );
   const plannedMonthlyTarget = useMemo(
-    () => calculatePlannedMonthlyTotal(goals),
+    () => calculateCyclePlannedMonthlyTarget(goals),
     [goals]
   );
   const goalHealthSummary = useMemo(
@@ -101,7 +101,7 @@ const InsightsPanel = ({ goals, monthlyData }) => {
                 </strong>
               </div>
               <div>
-                <span>Meta mensal planejada</span>
+                <span>Planejado por mês</span>
                 <strong>{formatCurrency(plannedMonthlyTarget)}</strong>
               </div>
             </div>

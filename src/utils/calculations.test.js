@@ -1,8 +1,10 @@
 import {
   buildMonthlyTotalsSeries,
   calculateActiveGoalsCount,
+  calculateCyclePlannedAnnualTotal,
   calculateCompletionRate,
   calculateFilledMonthsCount,
+  calculateGoalActiveMonthsCount,
   calculateGoalProgress,
   calculateGoalTotal,
   calculateGrandTotal,
@@ -45,10 +47,33 @@ describe("financial calculations", () => {
     expect(calculateGoalProgress(goals, monthlyData, 1)).toBe(50);
     expect(calculateGoalProgress(goals, monthlyData, 2)).toBe(100);
     expect(calculateProjectionMonths(goals[0], monthlyData)).toBe(2);
+    expect(calculateGoalActiveMonthsCount(monthlyData, 1)).toBe(2);
     expect(calculateActiveGoalsCount(goals)).toBe(1);
     expect(calculateFilledMonthsCount(monthlyData)).toBe(2);
     expect(calculateCompletionRate(goals, monthlyData)).toBe(50);
     expect(calculatePlannedAnnualTotal(goals)).toBe(4800);
     expect(buildMonthlyTotalsSeries(monthlyData)).toHaveLength(12);
+  });
+
+  it("uses the goal history itself to project remaining months", () => {
+    const sparseGoal = {
+      id: 7,
+      targetAmount: 1000,
+      status: "active",
+      plannedMonthlyAmount: 0,
+    };
+
+    const sparseMonthlyData = [
+      { month: 1, values: { 7: 200 }, observation: "" },
+      { month: 2, values: { 99: 300 }, observation: "" },
+      { month: 3, values: {}, observation: "" },
+    ];
+
+    expect(calculateGoalActiveMonthsCount(sparseMonthlyData, 7)).toBe(1);
+    expect(calculateProjectionMonths(sparseGoal, sparseMonthlyData)).toBe(4);
+  });
+
+  it("calculates the annual cycle target from planned monthly contributions", () => {
+    expect(calculateCyclePlannedAnnualTotal(goals)).toBe(4800);
   });
 });

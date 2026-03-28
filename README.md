@@ -1,17 +1,17 @@
 # PlanoMeta
 
-Aplicação React para planejamento financeiro com:
+Aplicação React para planejamento financeiro pessoal com:
 
 - login Google
 - sincronização exclusiva em nuvem com Firebase
 - suporte a múltiplos anos
-- exportação de relatórios em CSV, XLSX e PDF
+- metas por categoria, prioridade e status
+- exportação de relatórios em CSV, XLSX, PDF e DOCX
 - backup restaurável em JSON
-- monitoramento opcional com Sentry e analytics
 
 ## Fluxo do projeto
 
-O projeto opera em um fluxo único na branch `main`.
+O projeto opera em fluxo único na branch `main`.
 
 ## Firebase
 
@@ -36,32 +36,29 @@ Variáveis usadas:
 - `REACT_APP_FIREBASE_MESSAGING_SENDER_ID`
 - `REACT_APP_FIREBASE_APP_ID`
 - `REACT_APP_FIREBASE_APP_CHECK_KEY`
-- `REACT_APP_ANALYTICS_ID`
-- `REACT_APP_SENTRY_DSN`
 - `REACT_APP_USE_MOCK_SERVICES`
 
 ## Persistência e recuperação
 
-O sistema usa autenticação Google com Firestore como única fonte de verdade.
+O sistema usa autenticação Google com Firestore como fonte de verdade da conta.
 Novas contas começam sem metas para que cada usuário monte o próprio planejamento.
 
 Política recomendada de backup:
 
-1. Exportar um backup JSON antes de resets ou mudanças grandes.
-2. Usar CSV, XLSX e PDF como relatórios, não como restauração completa.
-3. Restaurar a conta apenas com arquivos JSON gerados pelo próprio sistema.
+1. Exporte um backup JSON antes de resets ou mudanças grandes.
+2. Use CSV, XLSX, PDF e DOCX como relatórios, não como restauração completa.
+3. Restaure a conta apenas com arquivos JSON gerados pelo próprio sistema.
 
 ## Sincronização
 
-O app usa sincronização com controle de revisão no documento e tenta conciliar alterações concorrentes antes de sobrescrever a nuvem. Isso reduz perda silenciosa de dados em uso multi-dispositivo.
+O app usa revisão de documento no Firestore e tenta conciliar alterações concorrentes antes de sobrescrever a nuvem. Isso reduz perda silenciosa de dados em uso multi-dispositivo.
 
-## Monitoramento e segurança
+## Segurança e deploy
 
-- `Sentry` opcional para erros em produção
-- `GA4` opcional para analytics e web vitals
-- `App Check` opcional para endurecer acesso ao Firebase
+- `App Check` opcional para endurecer o acesso ao Firebase
 - headers de segurança e CSP em `public/_headers`
 - fallback SPA em `public/_redirects`
+- regras do Firestore em `firestore.rules`
 
 ## Scripts
 
@@ -74,7 +71,7 @@ O app usa sincronização com controle de revisão no documento e tenta concilia
 
 ## Testes
 
-Além dos testes utilitários, o projeto agora inclui testes E2E com Playwright cobrindo:
+Além dos testes utilitários, o projeto inclui testes E2E com Playwright cobrindo:
 
 - login
 - criação de meta

@@ -2,6 +2,7 @@ import { ArrowRight, CalendarDays } from "lucide-react";
 import { MONTH_NAMES } from "../constants/defaultData";
 import { getCategoryMeta } from "../utils/categoryMeta";
 import { formatCurrency, formatCurrencyAdaptive } from "../utils/formatters";
+import DecimalInput from "./DecimalInput";
 import "../styles/MonthlyTable.css";
 
 const MonthlyTable = ({
@@ -14,12 +15,6 @@ const MonthlyTable = ({
   calculateGrandTotal,
   onAddGoal,
 }) => {
-  const handleValueChange = (monthIndex, goalId, nextValue) => {
-    if (nextValue === "" || parseFloat(nextValue) >= 0) {
-      onUpdateValue(monthIndex, goalId, nextValue);
-    }
-  };
-
   return (
     <section className="monthly-table-container">
       <div className="monthly-table-header">
@@ -110,15 +105,11 @@ const MonthlyTable = ({
                         >
                           Valor de {goal.name} em {MONTH_NAMES[index]}
                         </label>
-                        <input
+                        <DecimalInput
                           id={`value-${index}-${goal.id}`}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          inputMode="decimal"
                           value={month.values[goal.id] ?? ""}
-                          onChange={(event) =>
-                            handleValueChange(index, goal.id, event.target.value)
+                          onCommit={(nextValue) =>
+                            onUpdateValue(index, goal.id, nextValue)
                           }
                           placeholder="0.00"
                           className="value-input"

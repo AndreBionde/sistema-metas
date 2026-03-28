@@ -7,6 +7,7 @@ import {
   formatMonthProjection,
   formatPercent,
 } from "../utils/formatters";
+import DecimalInput from "./DecimalInput";
 import "../styles/GoalCard.css";
 
 const GoalCard = ({
@@ -23,20 +24,11 @@ const GoalCard = ({
   onUpdatePlannedAmount,
   onDuplicate,
   onUpdatePriority,
-  idealContribution,
   riskLevel,
 }) => {
   const isCompleted = goal.status === "completed";
   const categoryMeta = getCategoryMeta(goal.category);
   const CategoryIcon = categoryMeta.icon;
-
-  const handleNumericChange = (callback) => (event) => {
-    const nextValue = event.target.value;
-
-    if (nextValue === "" || parseFloat(nextValue) >= 0) {
-      callback(goal.id, nextValue);
-    }
-  };
 
   return (
     <article
@@ -53,7 +45,7 @@ const GoalCard = ({
           </span>
           <div className="goal-card-topline-actions">
             <span className="goal-progress-inline">
-              {`${formatPercent(progress)} conclu\u00eddo`}
+              {`${formatPercent(progress)} concluído`}
             </span>
             <button
               type="button"
@@ -129,13 +121,9 @@ const GoalCard = ({
 
           <label className="goal-meta-field">
             <span>Aporte mensal planejado</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
+            <DecimalInput
               value={goal.plannedMonthlyAmount || ""}
-              onChange={handleNumericChange(onUpdatePlannedAmount)}
+              onCommit={(nextValue) => onUpdatePlannedAmount(goal.id, nextValue)}
               placeholder="Ex: 400"
               className="target-input"
             />
@@ -174,7 +162,7 @@ const GoalCard = ({
             aria-pressed={goal.status === "completed"}
           >
             <CheckCircle2 className="status-icon-small" aria-hidden="true" />
-            {"Conclu\u00edda"}
+            Concluída
           </button>
         </div>
 
@@ -182,14 +170,10 @@ const GoalCard = ({
           <label htmlFor={`target-${goal.id}`} className="target-label">
             Meta de valor
           </label>
-          <input
+          <DecimalInput
             id={`target-${goal.id}`}
-            type="number"
-            min="0"
-            step="0.01"
-            inputMode="decimal"
             value={goal.targetAmount || ""}
-            onChange={handleNumericChange(onUpdateTarget)}
+            onCommit={(nextValue) => onUpdateTarget(goal.id, nextValue)}
             placeholder="Ex: 5000.00"
             className="target-input"
           />
@@ -226,7 +210,7 @@ const GoalCard = ({
               ) : null}
               {progress >= 80 && progress < 100 ? (
                 <div className="progress-badge progress-badge-almost">
-                  <span>Quase l\u00e1</span>
+                  <span>Quase lá</span>
                 </div>
               ) : null}
             </div>
@@ -237,13 +221,11 @@ const GoalCard = ({
           <p className={`goal-total ${isCompleted ? "goal-total-completed" : ""}`}>
             Acumulado: {formatCurrency(total)}
           </p>
-          <p className="goal-projection">
-            {"Proje\u00e7\u00e3o: "} {formatMonthProjection(projectedMonths)}
-          </p>
+          <p className="goal-projection">Projeção: {formatMonthProjection(projectedMonths)}</p>
         </div>
         <div className="goal-insight-strip">
           <span>
-            Aporte ideal: <strong>{formatCurrency(idealContribution || 0)}</strong>
+            Planejado/mês: <strong>{formatCurrency(goal.plannedMonthlyAmount || 0)}</strong>
           </span>
           <span className={`goal-risk goal-risk-${riskLevel || "healthy"}`}>
             {riskLevel === "critical"

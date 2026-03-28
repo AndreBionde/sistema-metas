@@ -7,7 +7,7 @@ import {
   signOutUser,
   subscribeToAuthState,
 } from "../services/firebase";
-import { captureAppError, trackEvent } from "../services/monitoring";
+import { reportRuntimeError } from "../utils/errors";
 
 const AuthContext = createContext(null);
 
@@ -60,7 +60,6 @@ export const AuthProvider = ({ children }) => {
 
       if (nextUser) {
         setAuthError("");
-        trackEvent("login_success");
       }
 
       setUser(nextUser);
@@ -98,13 +97,14 @@ export const AuthProvider = ({ children }) => {
     setIsSigningIn(true);
 
     try {
-      trackEvent("login_start");
       await signInWithGoogle();
     } catch (error) {
-      captureAppError(error, { stage: "sign_in" });
+      reportRuntimeError("sign_in", error, { stage: "sign_in" });
       signInInFlightRef.current = false;
       setIsSigningIn(false);
 
+      // Mantemos mensagens especificas por codigo para evitar suporte cego
+      // quando o bloqueio vem de pop-up, dominio ou configuracao do Firebase.
       if (error?.code === "auth/popup-closed-by-user") {
         window.setTimeout(() => {
           if (!getCurrentUser()) {
@@ -176,7 +176,6 @@ export const AuthProvider = ({ children }) => {
     signInInFlightRef.current = false;
     setIsSigningIn(false);
     await signOutUser();
-    trackEvent("logout");
   };
 
   const cancelAuthLoading = async () => {

@@ -5,6 +5,34 @@ const safeNumber = (value) => {
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 };
 
+export const getElapsedMonthlyData = (monthlyData = [], yearKey, now = new Date()) => {
+  const selectedYear = Number(yearKey);
+
+  if (!Number.isFinite(selectedYear)) {
+    return monthlyData;
+  }
+
+  if (selectedYear > now.getFullYear()) {
+    return [];
+  }
+
+  if (selectedYear < now.getFullYear()) {
+    return monthlyData;
+  }
+
+  return monthlyData.slice(0, Math.min(now.getMonth() + 1, monthlyData.length));
+};
+
+export const getRemainingMonthsInCycle = (monthlyData = [], yearKey, now = new Date()) => {
+  const selectedYear = Number(yearKey);
+
+  if (!Number.isFinite(selectedYear) || selectedYear !== now.getFullYear()) {
+    return Math.max(monthlyData.length || 12, 1);
+  }
+
+  return Math.max((monthlyData.length || 12) - now.getMonth(), 1);
+};
+
 export const getYearPlan = (appState, yearKey) =>
   appState?.years?.[String(yearKey)] || { goals: [], monthlyData: [] };
 
@@ -19,6 +47,9 @@ export const calculateGoalTotal = (monthlyData, goalId) =>
     (sum, month) => sum + safeNumber(month.values?.[goalId] || 0),
     0
   );
+
+export const calculateGoalActiveMonthsCount = (monthlyData, goalId) =>
+  monthlyData.filter((month) => safeNumber(month.values?.[goalId] || 0) > 0).length;
 
 export const calculateGrandTotal = (monthlyData) =>
   monthlyData.reduce(
@@ -84,21 +115,28 @@ export const calculatePlannedMonthlyTotal = (goals) =>
 export const calculatePlannedAnnualTotal = (goals) =>
   calculatePlannedMonthlyTotal(goals) * 12;
 
+export const calculateCyclePlannedMonthlyTarget = (goals) =>
+  calculatePlannedMonthlyTotal(goals);
+
+export const calculateCyclePlannedAnnualTotal = (goals) =>
+  calculateCyclePlannedMonthlyTarget(goals) * 12;
+
 export const calculatePlannedVsActual = (goals, monthlyData) => ({
-  planned: calculatePlannedAnnualTotal(goals),
+  planned: calculateCyclePlannedAnnualTotal(goals),
   actual: calculateGrandTotal(monthlyData),
 });
 
 export const calculateProjectionMonths = (goal, monthlyData) => {
-  const remainingAmount =
-    safeNumber(goal.targetAmount) - calculateGoalTotal(monthlyData, goal.id);
+  const goalTotal = calculateGoalTotal(monthlyData, goal.id);
+  const remainingAmount = safeNumber(goal.targetAmount) - goalTotal;
 
   if (safeNumber(goal.targetAmount) <= 0 || remainingAmount <= 0) {
     return 0;
   }
 
+  const goalActiveMonthsCount = calculateGoalActiveMonthsCount(monthlyData, goal.id);
   const monthlyAverage = Math.max(
-    calculateGoalTotal(monthlyData, goal.id) / Math.max(calculateFilledMonthsCount(monthlyData), 1),
+    goalTotal / Math.max(goalActiveMonthsCount, 1),
     safeNumber(goal.plannedMonthlyAmount)
   );
 

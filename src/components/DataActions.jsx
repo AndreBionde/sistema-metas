@@ -48,11 +48,11 @@ const DataActions = ({
         </button>
         <button type="button" className="data-action-button" onClick={onExportSummary}>
           <FileText className="data-action-icon" aria-hidden="true" />
-          Exportar resumo
+          Exportar resumo DOCX
         </button>
         <button type="button" className="data-action-button" onClick={onExportJson}>
           <FileText className="data-action-icon" aria-hidden="true" />
-          Backup JSON
+          Backup JSON da conta
         </button>
         <button
           type="button"
@@ -93,13 +93,13 @@ const DataActions = ({
         </div>
         <div className="data-actions-info-card">
           <span>{"Recupera\u00e7\u00e3o"}</span>
-          <strong>{"Backup JSON restaur\u00e1vel"}</strong>
+          <strong>{"Backup JSON completo"}</strong>
         </div>
       </div>
 
       <p className="data-actions-policy">
-        {"Use o backup JSON como c\u00f3pia restaur\u00e1vel da sua conta. CSV, XLSX e PDF servem "}
-        {"como relat\u00f3rios, n\u00e3o como recupera\u00e7\u00e3o completa."}
+        {"O backup JSON inclui todos os anos da conta para restaura\u00e7\u00e3o completa. "}
+        {"CSV, XLSX, PDF e resumo DOCX exportam apenas o ano atualmente selecionado."}
       </p>
 
       {notice ? (

@@ -11,12 +11,12 @@ import {
   createAppStateSignature,
   mergeAppStates,
 } from "../utils/storage";
-import { captureAppError } from "../services/monitoring";
+import { reportRuntimeError } from "../utils/errors";
 
 const INITIAL_SYNC_TIMEOUT_MS = 8000;
 
 const reportSyncError = (label, error) => {
-  captureAppError(error, { scope: "cloud_sync", label });
+  reportRuntimeError(label, error, { scope: "cloud_sync" });
 
   if (process.env.NODE_ENV !== "production") {
     console.error(`[sync] ${label}`, error);
@@ -160,6 +160,8 @@ export const useCloudPlanState = (user) => {
     ) => {
       initialBootstrapHandled = true;
 
+      // Se existe alteração local ainda não confirmada, fazemos merge em vez de
+      // simplesmente aceitar o remoto e perder o que acabou de ser digitado.
       const hasUnsyncedLocalChanges =
         latestStateSignatureRef.current !== confirmedCloudSignatureRef.current;
       const remoteMatchesLatest = signature === latestStateSignatureRef.current;
@@ -332,6 +334,8 @@ export const useCloudPlanState = (user) => {
     setSaveStatus("saving");
     setSaveError("");
 
+    // Debounce curto para agrupar digitações em uma única gravação e reduzir
+    // conflitos desnecessários entre abas/dispositivos.
     const timeoutId = window.setTimeout(async () => {
       try {
         setSyncStatus("syncing");

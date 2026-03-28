@@ -81,5 +81,31 @@ describe("dashboard state utils", () => {
     expect(metrics.visibleMonthTotals[0]).toBe(40);
     expect(metrics.visibleGrandTotal).toBe(60);
     expect(metrics.activeGoalsCount).toBe(1);
+    expect(metrics.plannedAnnualTotal).toBe(360);
+  });
+
+  it("uses the same launched values across cards and table totals", () => {
+    const metrics = buildDashboardMetrics({
+      goals: [
+        {
+          id: 1,
+          name: "Reserva",
+          targetAmount: 1000,
+          plannedMonthlyAmount: 0,
+          status: "active",
+        },
+      ],
+      filteredGoals: [{ id: 1, name: "Reserva" }],
+      monthlyData: [
+        { month: 1, values: { 1: 500 }, observation: "" },
+        { month: 2, values: { 1: 200 }, observation: "" },
+      ],
+    });
+
+    expect(metrics.goalTotalsById[1]).toBe(700);
+    expect(metrics.tableGoalTotalsById[1]).toBe(700);
+    expect(metrics.goalProgressById[1]).toBe(70);
+    expect(metrics.visibleMonthTotals[1]).toBe(200);
+    expect(metrics.visibleGrandTotal).toBe(700);
   });
 });

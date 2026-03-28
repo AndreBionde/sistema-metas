@@ -1,6 +1,11 @@
 import { AlertOctagon, Gauge, Sparkles, TriangleAlert } from "lucide-react";
-import { PRIORITY_LABELS, buildPlanningAlerts, sortGoalsByPriority } from "../utils/planningInsights";
-import { formatCurrencyAdaptive } from "../utils/formatters";
+import {
+  PRIORITY_LABELS,
+  buildPlanningAlerts,
+  sortGoalsByPriority,
+} from "../utils/planningInsights";
+import { formatMonthProjection } from "../utils/formatters";
+import { calculateProjectionMonths } from "../utils/calculations";
 import "../styles/PlanningIntelligencePanel.css";
 
 const riskLabels = {
@@ -20,10 +25,11 @@ const PlanningIntelligencePanel = ({ goals, monthlyData, currentYear }) => {
       <div className="planning-intelligence-header">
         <div>
           <p className="planning-intelligence-kicker">Inteligência do planejamento</p>
-          <h2>Alertas, prioridades e ritmo ideal</h2>
+          <h2>Alertas, prioridades e ritmo</h2>
         </div>
         <p className="planning-intelligence-caption">
-          O painel destaca metas estagnadas, prioridade atual e aporte sugerido por objetivo.
+          O painel destaca metas estagnadas, prioridade atual e ritmo de conclusão
+          por objetivo.
         </p>
       </div>
 
@@ -52,13 +58,13 @@ const PlanningIntelligencePanel = ({ goals, monthlyData, currentYear }) => {
         <article className="planning-intelligence-card">
           <div className="planning-intelligence-card-top">
             <Sparkles className="planning-intelligence-icon" aria-hidden="true" />
-            <span>Sugestão de aporte ideal</span>
+            <span>Projeção por meta</span>
           </div>
           <div className="planning-intelligence-list">
-            {alerts.slice(0, 4).map(({ goal, idealMonthlyContribution }) => (
+            {alerts.slice(0, 4).map(({ goal }) => (
               <div key={goal.id} className="planning-intelligence-item">
                 <strong>{goal.name}</strong>
-                <p>{formatCurrencyAdaptive(idealMonthlyContribution)} por mês para manter o ciclo competitivo.</p>
+                <p>{formatMonthProjection(calculateProjectionMonths(goal, monthlyData))}</p>
               </div>
             ))}
           </div>
@@ -76,8 +82,8 @@ const PlanningIntelligencePanel = ({ goals, monthlyData, currentYear }) => {
                 <div key={goal.id} className="planning-intelligence-item">
                   <strong>{goal.name}</strong>
                   <p>
-                    Prioridade {PRIORITY_LABELS[goal.priority] || "Média"} ·{" "}
-                    {riskLabels[goalInsight?.riskLevel] || "Saudável"} ·{" "}
+                    Prioridade {PRIORITY_LABELS[goal.priority] || "Média"} {"·"}{" "}
+                    {riskLabels[goalInsight?.riskLevel] || "Saudável"} {"·"}{" "}
                     {goalInsight?.stagnationMonths >= 3
                       ? `${goalInsight.stagnationMonths} meses sem aporte`
                       : "Movimento recente"}

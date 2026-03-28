@@ -1,9 +1,11 @@
 import { MONTH_NAMES } from "../constants/defaultData";
 import {
-  calculateGoalTotal,
+  calculateCyclePlannedAnnualTotal,
+  calculateCyclePlannedMonthlyTarget,
   calculateGrandTotal,
+  getElapsedMonthlyData,
+  getRemainingMonthsInCycle,
   calculateMonthlyAverage,
-  calculatePlannedAnnualTotal,
   calculateProjectionMonths,
   getYearPlan,
 } from "./calculations";
@@ -46,7 +48,7 @@ export const buildHistoricalYearSeries = (appState) =>
       return {
         yearKey,
         total: calculateGrandTotal(yearPlan.monthlyData),
-        planned: calculatePlannedAnnualTotal(yearPlan.goals),
+        planned: calculateCyclePlannedAnnualTotal(yearPlan.goals),
         goals: yearPlan.goals.length,
         monthsWithActivity: yearPlan.monthlyData.filter((month) =>
           Object.values(month.values || {}).some((value) => Number(value || 0) > 0)
@@ -54,7 +56,7 @@ export const buildHistoricalYearSeries = (appState) =>
       };
     });
 
-export const buildQuarterlyTrend = (monthlyData = []) =>
+export const buildQuarterlyTrend = (monthlyData = [], currentYear) =>
   [0, 1, 2, 3].map((quarterIndex) => {
     const startMonth = quarterIndex * 3;
     const months = monthlyData.slice(startMonth, startMonth + 3);
@@ -82,7 +84,9 @@ export const buildYearComparison = (appState, currentYear, comparisonYear) => {
   const currentPlan = getYearPlan(appState, currentYear);
   const previousPlan = previousYear ? getYearPlan(appState, previousYear) : null;
   const currentTotal = calculateGrandTotal(currentPlan.monthlyData);
-  const previousTotal = previousPlan ? calculateGrandTotal(previousPlan.monthlyData) : 0;
+  const previousTotal = previousPlan
+    ? calculateGrandTotal(previousPlan.monthlyData)
+    : 0;
   const delta = currentTotal - previousTotal;
 
   return {
@@ -93,11 +97,17 @@ export const buildYearComparison = (appState, currentYear, comparisonYear) => {
   };
 };
 
-export const calculateMonthsWithoutContribution = (goal, monthlyData = []) => {
+export const calculateMonthsWithoutContribution = (
+  goal,
+  monthlyData = [],
+  currentYear,
+  now = new Date()
+) => {
+  const elapsedMonthlyData = getElapsedMonthlyData(monthlyData, currentYear, now);
   let gap = 0;
 
-  for (let index = monthlyData.length - 1; index >= 0; index -= 1) {
-    const monthValue = Number(monthlyData[index]?.values?.[goal.id] || 0);
+  for (let index = elapsedMonthlyData.length - 1; index >= 0; index -= 1) {
+    const monthValue = Number(elapsedMonthlyData[index]?.values?.[goal.id] || 0);
 
     if (monthValue > 0) {
       break;
@@ -109,24 +119,7 @@ export const calculateMonthsWithoutContribution = (goal, monthlyData = []) => {
   return gap;
 };
 
-export const calculateIdealMonthlyContribution = (goal, monthlyData = [], currentYear) => {
-  const target = Number(goal?.targetAmount || 0);
-  const total = calculateGoalTotal(monthlyData, goal?.id);
-  const remaining = Math.max(target - total, 0);
-
-  if (target <= 0 || remaining <= 0) {
-    return 0;
-  }
-
-  const now = new Date();
-  const selectedYear = Number(currentYear);
-  const currentMonthIndex = now.getFullYear() === selectedYear ? now.getMonth() : 0;
-  const remainingMonths = Math.max(12 - currentMonthIndex, 1);
-
-  return remaining / remainingMonths;
-};
-
-export const getDelayRisk = (goal, monthlyData = [], currentYear) => {
+export const getDelayRisk = (goal, monthlyData = [], currentYear, now = new Date()) => {
   if (Number(goal?.targetAmount || 0) <= 0 || goal?.status === "completed") {
     return "healthy";
   }
@@ -137,10 +130,7 @@ export const getDelayRisk = (goal, monthlyData = [], currentYear) => {
     return "critical";
   }
 
-  const now = new Date();
-  const selectedYear = Number(currentYear);
-  const currentMonthIndex = now.getFullYear() === selectedYear ? now.getMonth() : 0;
-  const remainingMonths = Math.max(12 - currentMonthIndex, 1);
+  const remainingMonths = getRemainingMonthsInCycle(monthlyData, currentYear, now);
 
   if (projectedMonths > remainingMonths) {
     return "warning";
@@ -149,54 +139,119 @@ export const getDelayRisk = (goal, monthlyData = [], currentYear) => {
   return projectedMonths <= Math.max(remainingMonths / 2, 1) ? "healthy" : "watch";
 };
 
-export const buildPlanningAlerts = (goals = [], monthlyData = [], currentYear) =>
+export const buildPlanningAlerts = (goals = [], monthlyData = [], currentYear, now = new Date()) =>
   sortGoalsByPriority(goals)
     .filter((goal) => goal.status !== "completed")
     .map((goal) => {
-      const stagnationMonths = calculateMonthsWithoutContribution(goal, monthlyData);
-      const idealMonthlyContribution = calculateIdealMonthlyContribution(
+      const stagnationMonths = calculateMonthsWithoutContribution(
         goal,
         monthlyData,
-        currentYear
+        currentYear,
+        now
       );
-      const riskLevel = getDelayRisk(goal, monthlyData, currentYear);
+      const riskLevel = getDelayRisk(goal, monthlyData, currentYear, now);
 
       return {
         goal,
         stagnationMonths,
-        idealMonthlyContribution,
         riskLevel,
       };
     });
 
-export const buildCycleProjection = (goals = [], monthlyData = []) => {
-  const annualPlan = calculatePlannedAnnualTotal(goals);
+const calculateRecordedMonthTotal = (month) =>
+  Object.values(month?.values || {}).reduce(
+    (sum, value) => sum + Number(value || 0),
+    0
+  );
+
+export const buildCycleProjection = (
+  goals = [],
+  monthlyData = [],
+  currentYear,
+  now = new Date()
+) => {
+  const selectedYear = Number(currentYear);
   const actualTotal = calculateGrandTotal(monthlyData);
+  const monthlyTarget = calculateCyclePlannedMonthlyTarget(goals);
+  const currentYearNumber = now.getFullYear();
+  const currentMonthIndex = now.getMonth();
+
+  const projectCycleTotal = (fallbackMonthlyValue) => {
+    let monthsProjectedFromPlan = 0;
+
+    // Regra da projeção: respeitamos tudo que já foi lançado no mês e só
+    // completamos com estimativa os meses futuros ainda vazios.
+    const projectedTotal = monthlyData.reduce((sum, month, monthIndex) => {
+      const recordedTotal = calculateRecordedMonthTotal(month);
+
+      if (recordedTotal > 0) {
+        return sum + recordedTotal;
+      }
+
+      if (!Number.isFinite(selectedYear) || selectedYear > currentYearNumber) {
+        monthsProjectedFromPlan += 1;
+        return sum + fallbackMonthlyValue;
+      }
+
+      if (selectedYear < currentYearNumber) {
+        return sum;
+      }
+
+      if (monthIndex > currentMonthIndex) {
+        monthsProjectedFromPlan += 1;
+        return sum + fallbackMonthlyValue;
+      }
+
+      return sum;
+    }, 0);
+
+    return {
+      projectedTotal,
+      monthsProjectedFromPlan,
+    };
+  };
+
+  if (monthlyTarget > 0) {
+    const annualTarget = calculateCyclePlannedAnnualTotal(goals);
+    const { projectedTotal, monthsProjectedFromPlan } = projectCycleTotal(monthlyTarget);
+
+    return {
+      source: "planned",
+      actualTotal,
+      monthlyTarget,
+      annualTarget,
+      remainingMonths: getRemainingMonthsInCycle(monthlyData, currentYear, now),
+      monthsProjectedFromPlan,
+      projectedTotal,
+      gapToTarget: annualTarget - projectedTotal,
+    };
+  }
+
   const monthlyAverage = calculateMonthlyAverage(monthlyData);
 
-  if (annualPlan <= 0) {
-    return {
-      projectedMonths: null,
-      projectedTotal: actualTotal,
-    };
-  }
+  if (monthlyAverage > 0) {
+    const { projectedTotal, monthsProjectedFromPlan } = projectCycleTotal(monthlyAverage);
 
-  if (actualTotal >= annualPlan) {
     return {
-      projectedMonths: 0,
-      projectedTotal: actualTotal,
-    };
-  }
-
-  if (monthlyAverage <= 0) {
-    return {
-      projectedMonths: null,
-      projectedTotal: actualTotal,
+      source: "average",
+      actualTotal,
+      monthlyTarget: monthlyAverage,
+      annualTarget: null,
+      remainingMonths: getRemainingMonthsInCycle(monthlyData, currentYear, now),
+      monthsProjectedFromPlan,
+      projectedTotal,
+      gapToTarget: null,
     };
   }
 
   return {
-    projectedMonths: Math.ceil((annualPlan - actualTotal) / monthlyAverage),
-    projectedTotal: annualPlan,
+    source: "none",
+    actualTotal,
+    monthlyTarget: 0,
+    annualTarget: null,
+    remainingMonths: getRemainingMonthsInCycle(monthlyData, currentYear, now),
+    monthsProjectedFromPlan: 0,
+    projectedTotal: actualTotal,
+    gapToTarget: null,
   };
 };

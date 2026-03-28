@@ -134,8 +134,10 @@ const sanitizeYearPlan = (plan) => {
   const monthlyData = buildEmptyMonthlyData().map((month, index) =>
     sanitizeMonth(sourceMonthlyData[index], index)
   );
-
-  return { goals, monthlyData };
+  return {
+    goals,
+    monthlyData,
+  };
 };
 
 const sanitizeMetadata = (metadata) => ({
@@ -144,9 +146,6 @@ const sanitizeMetadata = (metadata) => ({
     typeof metadata?.lastExportAt === "string" ? metadata.lastExportAt : "",
   lastImportAt:
     typeof metadata?.lastImportAt === "string" ? metadata.lastImportAt : "",
-  publicMetrics: {
-    planStartedTracked: Boolean(metadata?.publicMetrics?.planStartedTracked),
-  },
   deletedYears: Array.isArray(metadata?.deletedYears)
     ? metadata.deletedYears.filter((yearKey) => typeof yearKey === "string").slice(0, 48)
     : [],
@@ -519,6 +518,8 @@ export const mergeAppStates = ({ baseState, remoteState, localState }) => {
   ].filter((yearKey) => !deletedYearKeys.includes(yearKey));
 
   let conflictCount = 0;
+  // O merge preserva alteracoes independentes por ano, meta e mes antes de
+  // resolver o ano corrente. Assim evitamos sobrescrever trabalho remoto/local.
   const years = yearKeys.reduce((nextYears, yearKey) => {
     const result = mergeYearPlan(
       normalizedBaseState.years?.[yearKey],
@@ -544,12 +545,6 @@ export const mergeAppStates = ({ baseState, remoteState, localState }) => {
       normalizedRemoteState.metadata?.lastImportAt,
       normalizedBaseState.metadata?.lastImportAt
     ),
-    publicMetrics: {
-      planStartedTracked:
-        normalizedLocalState.metadata?.publicMetrics?.planStartedTracked ||
-        normalizedRemoteState.metadata?.publicMetrics?.planStartedTracked ||
-        normalizedBaseState.metadata?.publicMetrics?.planStartedTracked,
-    },
     deletedYears: deletedYearKeys,
     activityLog: mergeLogsById(
       normalizedBaseState.metadata?.activityLog || [],

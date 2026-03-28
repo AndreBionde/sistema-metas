@@ -7,6 +7,7 @@ import {
   ChevronUp,
   GitCompareArrows,
   Landmark,
+  Trash2,
 } from "lucide-react";
 import {
   buildCycleProjection,
@@ -14,7 +15,7 @@ import {
   buildQuarterlyTrend,
   buildYearComparison,
 } from "../utils/planningInsights";
-import { formatCurrencyAdaptive, formatMonthProjection } from "../utils/formatters";
+import { formatCurrency, formatCurrencyAdaptive } from "../utils/formatters";
 import "../styles/StrategicInsightsPanel.css";
 
 const HISTORY_PREVIEW_LIMIT = 3;
@@ -28,6 +29,8 @@ const StrategicInsightsPanel = ({
   comparisonYear,
   comparisonOptions,
   onChangeComparisonYear,
+  canDeleteYear = false,
+  onDeleteYear,
 }) => {
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [showFullSummary, setShowFullSummary] = useState(false);
@@ -37,10 +40,17 @@ const StrategicInsightsPanel = ({
     [appState, currentYear, comparisonYear]
   );
   const yearSeries = useMemo(() => buildHistoricalYearSeries(appState), [appState]);
-  const quarterlyTrend = useMemo(() => buildQuarterlyTrend(monthlyData), [monthlyData]);
+  const quarterlyTrend = useMemo(
+    () => buildQuarterlyTrend(monthlyData, currentYear),
+    [monthlyData, currentYear]
+  );
   const cycleProjection = useMemo(
-    () => buildCycleProjection(goals, monthlyData),
-    [goals, monthlyData]
+    () => buildCycleProjection(goals, monthlyData, currentYear),
+    [goals, monthlyData, currentYear]
+  );
+  const projectedSupplement = Math.max(
+    cycleProjection.projectedTotal - cycleProjection.actualTotal,
+    0
   );
 
   const visibleHistory = showFullHistory
@@ -48,8 +58,8 @@ const StrategicInsightsPanel = ({
     : yearSeries.slice(0, HISTORY_PREVIEW_LIMIT);
 
   const summaryHighlights = useMemo(() => {
-    const topQuarter = [...quarterlyTrend].sort((leftQuarter, rightQuarter) =>
-      rightQuarter.total - leftQuarter.total
+    const topQuarter = [...quarterlyTrend].sort(
+      (leftQuarter, rightQuarter) => rightQuarter.total - leftQuarter.total
     )[0];
 
     const currentYearSeries =
@@ -66,11 +76,21 @@ const StrategicInsightsPanel = ({
             topQuarter.total
           )} e sinaliza o trimestre mais forte do momento.`
         : "Os aportes trimestrais aparecerão aqui conforme o ciclo ganhar histórico.",
-      cycleProjection.projectedMonths === null
-        ? "Ainda não existe um ritmo recorrente suficiente para estimar o fechamento do ciclo."
-        : `A projeção indica ${formatMonthProjection(
-            cycleProjection.projectedMonths
-          ).toLowerCase()} para fechar a meta anual consolidada.`,
+      cycleProjection.source === "none"
+        ? "Defina aportes planejados nas metas para estimar o fechamento anual."
+        : cycleProjection.gapToTarget === null
+          ? `No ritmo atual, o ciclo pode encerrar em ${formatCurrencyAdaptive(
+              cycleProjection.projectedTotal
+            )}.`
+          : cycleProjection.gapToTarget <= 0
+            ? `A projeção indica fechamento acima da meta anual em ${formatCurrencyAdaptive(
+                Math.abs(cycleProjection.gapToTarget)
+              )}.`
+            : `A projeção até dezembro estima ${formatCurrencyAdaptive(
+                cycleProjection.projectedTotal
+              )}, com diferença de ${formatCurrencyAdaptive(
+                cycleProjection.gapToTarget
+              )} para o planejado anual.`,
       currentYearSeries
         ? `${currentYearSeries.goals} metas e ${currentYearSeries.monthsWithActivity} meses ativos compõem a visão histórica do ano atual.`
         : "Os dados anuais do ciclo atual aparecem aqui conforme as metas são preenchidas.",
@@ -153,14 +173,45 @@ const StrategicInsightsPanel = ({
         <article className="strategic-card">
           <div className="strategic-card-top">
             <CalendarClock className="strategic-card-icon" aria-hidden="true" />
-            <span>Projeção do ciclo</span>
+            <span>Projeção até dezembro</span>
           </div>
-          <strong>{formatMonthProjection(cycleProjection.projectedMonths)}</strong>
+          <strong>{formatCurrencyAdaptive(cycleProjection.projectedTotal)}</strong>
           <p>
-            {cycleProjection.projectedMonths === null
-              ? "Ainda não há ritmo suficiente para projetar o fechamento do ciclo."
-              : `Meta anual estimada em ${formatCurrencyAdaptive(cycleProjection.projectedTotal)}.`}
+            {cycleProjection.source === "planned"
+              ? cycleProjection.monthsProjectedFromPlan > 0
+                ? `Considera os lançamentos já registrados e usa o planejado em ${cycleProjection.monthsProjectedFromPlan} ${cycleProjection.monthsProjectedFromPlan === 1 ? "mês futuro ainda vazio" : "meses futuros ainda vazios"}.`
+                : "Todos os meses futuros já têm lançamento registrado ou o ciclo já foi encerrado."
+              : cycleProjection.source === "average"
+                ? cycleProjection.monthsProjectedFromPlan > 0
+                  ? `Estimativa baseada no ritmo já realizado, aplicada em ${cycleProjection.monthsProjectedFromPlan} ${cycleProjection.monthsProjectedFromPlan === 1 ? "mês futuro ainda vazio" : "meses futuros ainda vazios"}.`
+                  : "Não há meses futuros vazios para complementar com estimativa."
+                : "Defina aportes planejados nas metas para projetar o fechamento anual."}
           </p>
+          {cycleProjection.source !== "none" ? (
+            <p className="strategic-projection-formula">
+              {`Cálculo: ${formatCurrency(cycleProjection.actualTotal)} já lançados + ${formatCurrency(projectedSupplement)} projetados = ${formatCurrency(cycleProjection.projectedTotal)}.`}
+            </p>
+          ) : null}
+          {cycleProjection.annualTarget !== null ? (
+            <div className="strategic-projection-metrics">
+              <div className="strategic-projection-metric">
+                <small>Planejado anual</small>
+                <strong>{formatCurrencyAdaptive(cycleProjection.annualTarget)}</strong>
+              </div>
+              <div className="strategic-projection-metric">
+                <small>Já lançado</small>
+                <strong>{formatCurrencyAdaptive(cycleProjection.actualTotal)}</strong>
+              </div>
+              <div className="strategic-projection-metric">
+                <small>Estimado nos meses vazios</small>
+                <strong>{formatCurrencyAdaptive(projectedSupplement)}</strong>
+              </div>
+              <div className="strategic-projection-metric">
+                <small>Diferença para o planejado</small>
+                <strong>{formatCurrencyAdaptive(cycleProjection.gapToTarget)}</strong>
+              </div>
+            </div>
+          ) : null}
         </article>
 
         <article className="strategic-card strategic-card-history">
@@ -174,10 +225,22 @@ const StrategicInsightsPanel = ({
                 <div>
                   <strong>{year.yearKey}</strong>
                   <span>
-                    {year.goals} metas · {year.monthsWithActivity} meses ativos
+                    {year.goals} metas {"·"} {year.monthsWithActivity} meses ativos
                   </span>
                 </div>
-                <p>{formatCurrencyAdaptive(year.total)}</p>
+                <div className="strategic-history-actions">
+                  <p>{formatCurrencyAdaptive(year.total)}</p>
+                  {canDeleteYear ? (
+                    <button
+                      type="button"
+                      className="strategic-history-delete"
+                      onClick={() => onDeleteYear?.(year.yearKey)}
+                      aria-label={`Excluir ano ${year.yearKey}`}
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>

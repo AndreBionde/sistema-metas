@@ -74,15 +74,6 @@ const authPreparationPromise = authInstance
 
 const getCloudPlanReference = (userId) =>
   doc(firestoreInstance, "users", userId, "plans", "default");
-const getPublicStatsReference = () =>
-  doc(firestoreInstance, "publicStats", "overview");
-
-const DEFAULT_PUBLIC_STATS = {
-  goalsCreated: 0,
-  plansStarted: 0,
-  reportsGenerated: 0,
-  activeYearsCreated: 0,
-};
 
 const normalizeCloudDocument = (documentData = {}) => {
   const nextState = normalizeAppState(documentData);
@@ -125,7 +116,6 @@ const buildCloudPayload = (appState, revision, sessionId) => ({
 
 const MOCK_AUTH_KEY = "planometa.mock.auth";
 const MOCK_PLAN_PREFIX = "planometa.mock.plan.";
-const MOCK_PUBLIC_STATS_KEY = "planometa.mock.public-stats";
 const mockAuthListeners = new Set();
 const mockPlanListeners = new Map();
 let mockCurrentUserCache;
@@ -201,32 +191,6 @@ const notifyMockPlanListeners = (userId) => {
 
     handlersEntry?.onData?.(normalizeCloudDocument(documentData));
   });
-};
-
-const readMockPublicStats = () => {
-  if (!isBrowser) {
-    return DEFAULT_PUBLIC_STATS;
-  }
-
-  try {
-    const serializedStats = window.localStorage.getItem(MOCK_PUBLIC_STATS_KEY);
-    return serializedStats
-      ? { ...DEFAULT_PUBLIC_STATS, ...JSON.parse(serializedStats) }
-      : DEFAULT_PUBLIC_STATS;
-  } catch {
-    return DEFAULT_PUBLIC_STATS;
-  }
-};
-
-const writeMockPublicStats = (nextStats) => {
-  if (!isBrowser) {
-    return;
-  }
-
-  window.localStorage.setItem(
-    MOCK_PUBLIC_STATS_KEY,
-    JSON.stringify({ ...DEFAULT_PUBLIC_STATS, ...nextStats })
-  );
 };
 
 export const auth = authInstance;
@@ -333,27 +297,6 @@ export const getCloudPlanOnce = async (userId) => {
   };
 };
 
-export const getPublicStatsOnce = async () => {
-  if (useMockServices) {
-    return readMockPublicStats();
-  }
-
-  if (!firestoreInstance) {
-    return DEFAULT_PUBLIC_STATS;
-  }
-
-  const documentSnapshot = await getDoc(getPublicStatsReference());
-
-  if (!documentSnapshot.exists()) {
-    return DEFAULT_PUBLIC_STATS;
-  }
-
-  return {
-    ...DEFAULT_PUBLIC_STATS,
-    ...documentSnapshot.data(),
-  };
-};
-
 export const subscribeToCloudPlan = (userId, handlers) => {
   if (useMockServices) {
     const listeners = mockPlanListeners.get(userId) || new Set();
@@ -403,42 +346,6 @@ export const subscribeToCloudPlan = (userId, handlers) => {
       }
 
       handlers?.onData?.(normalizeCloudDocument(documentSnapshot.data()));
-    },
-    (error) => {
-      handlers?.onError?.(error);
-    }
-  );
-};
-
-export const subscribeToPublicStats = (handlers) => {
-  if (useMockServices) {
-    handlers?.onData?.(readMockPublicStats());
-
-    const handleStorage = (event) => {
-      if (event.key !== MOCK_PUBLIC_STATS_KEY) {
-        return;
-      }
-
-      handlers?.onData?.(readMockPublicStats());
-    };
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }
-
-  if (!firestoreInstance) {
-    handlers?.onData?.(DEFAULT_PUBLIC_STATS);
-    return () => undefined;
-  }
-
-  return onSnapshot(
-    getPublicStatsReference(),
-    (documentSnapshot) => {
-      handlers?.onData?.(
-        documentSnapshot.exists()
-          ? { ...DEFAULT_PUBLIC_STATS, ...documentSnapshot.data() }
-          : DEFAULT_PUBLIC_STATS
-      );
     },
     (error) => {
       handlers?.onError?.(error);
@@ -498,60 +405,6 @@ export const saveCloudPlan = async (
       revision: nextRevision,
       updatedAtClient: payload.updatedAtClient,
     };
-  });
-};
-
-export const incrementPublicStats = async (increments = {}) => {
-  const filteredIncrements = Object.entries(increments).reduce(
-    (result, [key, value]) => {
-      const numericValue = Number(value);
-      if (Number.isFinite(numericValue) && numericValue > 0) {
-        result[key] = numericValue;
-      }
-      return result;
-    },
-    {}
-  );
-
-  if (Object.keys(filteredIncrements).length === 0) {
-    return DEFAULT_PUBLIC_STATS;
-  }
-
-  if (useMockServices) {
-    const currentStats = readMockPublicStats();
-    const nextStats = {
-      ...currentStats,
-      ...Object.entries(filteredIncrements).reduce((result, [key, value]) => {
-        result[key] = Number(currentStats[key] || 0) + value;
-        return result;
-      }, {}),
-    };
-    writeMockPublicStats(nextStats);
-    return nextStats;
-  }
-
-  if (!firestoreInstance) {
-    return DEFAULT_PUBLIC_STATS;
-  }
-
-  return runTransaction(firestoreInstance, async (transaction) => {
-    const reference = getPublicStatsReference();
-    const documentSnapshot = await transaction.get(reference);
-    const currentStats = documentSnapshot.exists()
-      ? { ...DEFAULT_PUBLIC_STATS, ...documentSnapshot.data() }
-      : DEFAULT_PUBLIC_STATS;
-
-    const nextStats = {
-      ...currentStats,
-      ...Object.entries(filteredIncrements).reduce((result, [key, value]) => {
-        result[key] = Number(currentStats[key] || 0) + value;
-        return result;
-      }, {}),
-      updatedAt: serverTimestamp(),
-    };
-
-    transaction.set(reference, nextStats, { merge: true });
-    return nextStats;
   });
 };
 

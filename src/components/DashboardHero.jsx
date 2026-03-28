@@ -49,10 +49,10 @@ const DashboardHero = ({
   const activeCategoryCount = new Set(goals.map((goal) => goal.category)).size;
   const spotlightStage = topGoal
     ? topGoalProgress >= 100
-      ? "Conclu\u00edda"
+      ? "Concluída"
       : topGoal.status === "paused"
         ? "Em espera"
-        : "Em evolu\u00e7\u00e3o"
+        : "Em evolução"
     : "";
 
   const heroCards = [
@@ -67,14 +67,14 @@ const DashboardHero = ({
       label: "Planejado no ciclo",
       value: formatCurrencyAdaptive(plannedAnnualTotal),
       fullValue: formatCurrency(plannedAnnualTotal),
-      helper: `${monthsWithEntries} meses com atividade`,
+      helper: "Soma dos aportes planejados das metas",
     },
     {
       icon: Compass,
       label: "Acumulado no ano",
       value: formatCurrencyAdaptive(totalGeral),
       fullValue: formatCurrency(totalGeral),
-      helper: `Vis\u00e3o consolidada de ${currentYear}`,
+      helper: `Visão consolidada de ${currentYear}`,
     },
   ];
 
@@ -82,20 +82,20 @@ const DashboardHero = ({
     goals.length === 0
       ? "Crie sua primeira meta para estruturar este ciclo."
       : monthsWithEntries === 0
-        ? "Registre o primeiro aporte do ano para ativar a leitura de evolu\u00e7\u00e3o."
-        : "Ajuste aportes planejados das metas mais estrat\u00e9gicas para acelerar o ritmo.";
+        ? "Registre o primeiro aporte do ano para ativar a leitura de evolução."
+        : "Ajuste aportes planejados das metas mais estratégicas para acelerar o ritmo.";
 
   return (
     <section className="dashboard-hero">
       <div className="dashboard-hero-copy">
         <p className="dashboard-hero-kicker">
           <Sparkles className="dashboard-hero-kicker-icon" aria-hidden="true" />
-          {"Vis\u00e3o executiva do ciclo"}
+          Visão executiva do ciclo
         </p>
         <h2 className="dashboard-hero-title">
           {goals.length > 0
-            ? `Seu planejamento de ${currentYear} est\u00e1 em movimento.`
-            : `Monte o plano de ${currentYear} com inten\u00e7\u00e3o e clareza.`}
+            ? `Seu planejamento de ${currentYear} está em movimento.`
+            : `Monte o plano de ${currentYear} com intenção e clareza.`}
         </h2>
         <p className="dashboard-hero-description">{nextActionCopy}</p>
 
@@ -119,7 +119,7 @@ const DashboardHero = ({
             <small>Estrutura atual do ciclo</small>
           </div>
           <div className="dashboard-hero-signal-card">
-            <span>{"Cad\u00eancia"}</span>
+            <span>Cadência</span>
             <strong>{`${monthsWithEntries}/12 meses`}</strong>
             <small>Meses com registro real</small>
           </div>
@@ -143,11 +143,11 @@ const DashboardHero = ({
             </div>
             <strong className="dashboard-hero-spotlight-title">{topGoal.name}</strong>
             <p className="dashboard-hero-spotlight-copy">
-              {"Escolhida por ter hoje a maior taxa de conclus\u00e3o entre as metas ativas com alvo definido."}
+              Escolhida por ter hoje a maior taxa de conclusão entre as metas ativas com alvo definido.
             </p>
             <div className="dashboard-hero-spotlight-progress">
               <div className="dashboard-hero-spotlight-progress-top">
-                <span>{"Crit\u00e9rio do destaque"}</span>
+                <span>Critério do destaque</span>
                 <strong>{formatPercent(topGoalProgress)}</strong>
               </div>
               <div className="dashboard-hero-spotlight-progress-track" aria-hidden="true">
@@ -185,7 +185,7 @@ const DashboardHero = ({
             <strong>Nenhuma meta criada ainda</strong>
             <p>
               {"Comece pelo objetivo mais relevante do ano. O painel vai construir "}
-              {"proje\u00e7\u00f5es e destaques automaticamente."}
+              {"projeções e destaques automaticamente."}
             </p>
             <button type="button" onClick={onAddGoal} className="dashboard-hero-empty-button">
               <ArrowRight className="dashboard-hero-empty-arrow" aria-hidden="true" />

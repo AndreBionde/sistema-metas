@@ -24,19 +24,12 @@ import { getDistinctCategories, getYearPlan } from "./utils/calculations";
 import {
   downloadTextFile,
   exportCsv,
-  exportMarkdownSummary,
+  exportDocxSummaryFile,
   exportPdfFile,
   exportWorkbookFile,
 } from "./utils/exporters";
 import { useCloudPlanState } from "./hooks/useCloudPlanState";
 import { useInstallPrompt } from "./hooks/useInstallPrompt";
-import { usePublicStats } from "./hooks/usePublicStats";
-import {
-  identifyMonitoringUser,
-  trackEvent,
-  trackPageView,
-} from "./services/monitoring";
-import { incrementPublicStats } from "./services/firebase";
 import {
   MAX_GOAL_NAME_LENGTH,
   buildDashboardMetrics,
@@ -54,25 +47,6 @@ import {
   sortGoalsByPriority,
 } from "./utils/planningInsights";
 import "./App.css";
-
-const getReplacementYearKey = (removedYearKey, yearMap) => {
-  const remainingYears = Object.keys(yearMap || {});
-
-  if (remainingYears.length === 0) {
-    return String(removedYearKey);
-  }
-
-  return remainingYears.sort((leftYear, rightYear) => {
-    const leftDistance = Math.abs(Number(leftYear) - Number(removedYearKey));
-    const rightDistance = Math.abs(Number(rightYear) - Number(removedYearKey));
-
-    if (leftDistance !== rightDistance) {
-      return leftDistance - rightDistance;
-    }
-
-    return Number(rightYear) - Number(leftYear);
-  })[0];
-};
 
 const DashboardApp = ({ user, onSignOut }) => {
   const {
@@ -148,7 +122,12 @@ const DashboardApp = ({ user, onSignOut }) => {
   const hasActiveFilters = categoryFilter !== "Todas" || statusFilter !== "all";
 
   const dashboardMetrics = useMemo(
-    () => buildDashboardMetrics({ goals, monthlyData, filteredGoals }),
+    () =>
+      buildDashboardMetrics({
+        goals,
+        monthlyData,
+        filteredGoals,
+      }),
     [goals, monthlyData, filteredGoals]
   );
 
@@ -289,35 +268,18 @@ const DashboardApp = ({ user, onSignOut }) => {
   };
 
   const addGoal = () => {
-    const shouldCountPlanStart =
-      goals.length === 0 && !appState.metadata?.publicMetrics?.planStartedTracked;
-
     updateCurrentPlan((plan) => ({
       ...plan,
       goals: [...plan.goals, buildGoalDraft(plan.goals)],
     }));
-    if (shouldCountPlanStart) {
-      updateMetadata((metadata) => ({
-        ...metadata,
-        publicMetrics: {
-          ...metadata.publicMetrics,
-          planStartedTracked: true,
-        },
-      }));
-    }
     setStatusNotice("Nova meta adicionada.");
-    pushToast("Meta criada", "O ciclo já pode ser preenchido com aportes e projeções.", "success");
+    pushToast("Meta criada", "O ciclo j\u00e1 pode ser preenchido com aportes e proje\u00e7\u00f5es.", "success");
     appendActivityLog({
       type: "goal_add",
       title: "Meta criada",
       description: `Uma nova meta foi adicionada ao ano ${currentYear}.`,
       yearKey: currentYear,
     });
-    trackEvent("goal_add");
-    incrementPublicStats({
-      goalsCreated: 1,
-      plansStarted: shouldCountPlanStart ? 1 : 0,
-    }).catch(() => undefined);
   };
 
   const removeGoal = (goalId) => {
@@ -329,7 +291,7 @@ const DashboardApp = ({ user, onSignOut }) => {
 
     openConfirmDialog({
       title: "Remover meta",
-      message: `A meta ${targetGoal.name} será enviada para a lixeira e poderá ser restaurada depois.`,
+      message: `A meta ${targetGoal.name} ser\u00e1 enviada para a lixeira e poder\u00e1 ser restaurada depois.`,
       confirmLabel: "Enviar para lixeira",
       tone: "danger",
       onConfirm: () => {
@@ -357,14 +319,13 @@ const DashboardApp = ({ user, onSignOut }) => {
         }));
         updateCurrentPlan((plan) => removeGoalFromPlan(plan, goalId));
         setStatusNotice("Meta enviada para a lixeira.");
-        pushToast("Meta removida", "Você pode recuperar esta meta no painel de governança.", "warning");
+        pushToast("Meta removida", "Voc\u00ea pode recuperar esta meta no painel de governan\u00e7a.", "warning");
         appendActivityLog({
           type: "goal_remove",
           title: "Meta removida",
           description: `${targetGoal.name} foi enviada para a lixeira no ano ${currentYear}.`,
           yearKey: currentYear,
         });
-        trackEvent("goal_remove");
         closeConfirmDialog();
       },
     });
@@ -374,14 +335,13 @@ const DashboardApp = ({ user, onSignOut }) => {
     updateCurrentPlan((plan) => duplicateGoalInPlan(plan, goalId));
     const sourceGoal = goals.find((goal) => goal.id === goalId);
     setStatusNotice("Meta duplicada com sucesso.");
-    pushToast("Meta duplicada", "A cópia herdou dados e pode ser ajustada livremente.", "success");
+    pushToast("Meta duplicada", "A c\u00f3pia herdou dados e pode ser ajustada livremente.", "success");
     appendActivityLog({
       type: "goal_duplicate",
       title: "Meta duplicada",
       description: `${sourceGoal?.name || "Meta"} foi duplicada no ano ${currentYear}.`,
       yearKey: currentYear,
     });
-    trackEvent("goal_duplicate");
   };
 
   const updateGoalField = (goalId, updater) => {
@@ -487,85 +447,100 @@ const DashboardApp = ({ user, onSignOut }) => {
     );
     handleExportStamp();
     setStatusNotice(`CSV do ano ${currentYear} exportado com sucesso.`);
-    pushToast("CSV exportado", `O arquivo do ano ${currentYear} já está disponível.`, "success");
+    pushToast("CSV exportado", `O arquivo do ano ${currentYear} j\u00e1 est\u00e1 dispon\u00edvel.`, "success");
     appendBackupLog({
       type: "export_csv",
       title: "CSV exportado",
-      description: `Relatório CSV do ano ${currentYear} gerado.`,
+      description: `Relat\u00f3rio CSV do ano ${currentYear} gerado.`,
       yearKey: currentYear,
     });
-    trackEvent("export_csv", { year: currentYear });
-    incrementPublicStats({ reportsGenerated: 1 }).catch(() => undefined);
   };
 
   const handleExportXlsx = async () => {
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    await exportWorkbookFile(appState, `planometa-${timestamp}.xlsx`);
+    await exportWorkbookFile(
+      appState,
+      currentYear,
+      `planometa-${currentYear}-${timestamp}.xlsx`
+    );
     handleExportStamp();
-    setStatusNotice("Planilha XLSX exportada com sucesso.");
-    pushToast("Planilha exportada", "O XLSX com múltiplas abas foi gerado com sucesso.", "success");
+    setStatusNotice(`Planilha XLSX do ano ${currentYear} exportada com sucesso.`);
+    pushToast(
+      "Planilha exportada",
+      `O XLSX do ano ${currentYear} foi gerado com sucesso.`,
+      "success"
+    );
     appendBackupLog({
       type: "export_xlsx",
       title: "Planilha XLSX exportada",
       description: "Arquivo de planilha consolidado gerado.",
       yearKey: currentYear,
     });
-    trackEvent("export_xlsx", { years: Object.keys(appState.years).length });
-    incrementPublicStats({ reportsGenerated: 1 }).catch(() => undefined);
   };
 
   const handleExportPdf = async () => {
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    await exportPdfFile(appState, `relatorio-planometa-${timestamp}.pdf`);
+    await exportPdfFile(
+      appState,
+      currentYear,
+      `relatorio-planometa-${currentYear}-${timestamp}.pdf`
+    );
     handleExportStamp();
-    setStatusNotice("Relat\u00f3rio PDF exportado com sucesso.");
-    pushToast("PDF exportado", "O relatório detalhado foi gerado com sucesso.", "success");
+    setStatusNotice(`Relat\u00f3rio PDF do ano ${currentYear} exportado com sucesso.`);
+    pushToast(
+      "PDF exportado",
+      `O relat\u00f3rio do ano ${currentYear} foi gerado com sucesso.`,
+      "success"
+    );
     appendBackupLog({
       type: "export_pdf",
       title: "PDF exportado",
-      description: "Relatório detalhado em PDF gerado.",
+      description: "Relat\u00f3rio detalhado em PDF gerado.",
       yearKey: currentYear,
     });
-    trackEvent("export_pdf", { years: Object.keys(appState.years).length });
-    incrementPublicStats({ reportsGenerated: 1 }).catch(() => undefined);
   };
 
-  const handleExportSummary = () => {
+  const handleExportSummary = async () => {
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    downloadTextFile(
-      `planometa-resumo-${currentYear}-${timestamp}.md`,
-      exportMarkdownSummary(appState, currentYear),
-      "text/markdown;charset=utf-8"
+    await exportDocxSummaryFile(
+      appState,
+      currentYear,
+      `planometa-resumo-${currentYear}-${timestamp}.docx`
     );
     handleExportStamp();
-    setStatusNotice("Resumo estratégico exportado com sucesso.");
-    pushToast("Resumo exportado", "O resumo em Markdown foi gerado para compartilhamento.", "success");
+    setStatusNotice(`Resumo do ano ${currentYear} exportado em DOCX com sucesso.`);
+    pushToast(
+      "Resumo exportado",
+      `O resumo do ano ${currentYear} foi gerado em DOCX.`,
+      "success"
+    );
     appendBackupLog({
       type: "export_summary",
-      title: "Resumo estratégico exportado",
-      description: `Resumo em Markdown do ano ${currentYear} gerado.`,
+      title: "Resumo estrat\u00e9gico exportado",
+      description: `Resumo em DOCX do ano ${currentYear} gerado.`,
       yearKey: currentYear,
     });
-    trackEvent("export_summary", { year: currentYear });
   };
   const handleExportJson = () => {
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     downloadTextFile(
-      `planometa-backup-${timestamp}.json`,
+      `planometa-backup-conta-${timestamp}.json`,
       JSON.stringify(cloneAppState(appState), null, 2),
       "application/json;charset=utf-8"
     );
     handleExportStamp();
-    setStatusNotice("Backup JSON exportado com sucesso.");
-    pushToast("Backup exportado", "O backup completo da conta foi salvo em JSON.", "success");
+    setStatusNotice("Backup JSON completo da conta exportado com sucesso.");
+    pushToast(
+      "Backup exportado",
+      "O JSON inclui todos os anos da conta para restaura\u00e7\u00e3o completa.",
+      "success"
+    );
     appendBackupLog({
       type: "export_json",
       title: "Backup JSON exportado",
-      description: "Snapshot restaurável da conta gerado com sucesso.",
+      description: "Snapshot restaur\u00e1vel da conta gerado com sucesso.",
       yearKey: currentYear,
     });
-    trackEvent("export_json_backup", { years: Object.keys(appState.years).length });
-    incrementPublicStats({ reportsGenerated: 1 }).catch(() => undefined);
   };
 
   const handleImportJson = async (file) => {
@@ -576,32 +551,18 @@ const DashboardApp = ({ user, onSignOut }) => {
     openConfirmDialog({
       title: "Restaurar backup",
       message:
-        "A restauração vai substituir o planejamento atual da conta. O estado anterior continuará salvo na lixeira de resets.",
+        "A restaura\u00e7\u00e3o vai substituir o planejamento atual da conta. O estado anterior continuar\u00e1 salvo na lixeira de resets.",
       confirmLabel: "Restaurar agora",
       tone: "warning",
       onConfirm: async () => {
         try {
           const rawContent = await file.text();
           const importedState = parseImportedAppState(rawContent);
-          const importedGoalsCount = Object.values(importedState.years).reduce(
-            (sum, yearPlan) => sum + yearPlan.goals.length,
-            0
-          );
-          const shouldCountPlanStart =
-            importedGoalsCount > 0 && !appState.metadata?.publicMetrics?.planStartedTracked;
-
           setAppState({
             ...importedState,
             metadata: {
               ...importedState.metadata,
               lastImportAt: new Date().toISOString(),
-              publicMetrics: {
-                ...importedState.metadata?.publicMetrics,
-                planStartedTracked:
-                  importedGoalsCount > 0
-                    ? true
-                    : Boolean(importedState.metadata?.publicMetrics?.planStartedTracked),
-              },
               trash: {
                 ...importedState.metadata?.trash,
                 resets: [
@@ -626,20 +587,13 @@ const DashboardApp = ({ user, onSignOut }) => {
               ],
             },
           });
-          setStatusNotice("Backup importado com sucesso. A nuvem será atualizada.");
+          setStatusNotice("Backup importado com sucesso. A nuvem ser\u00e1 atualizada.");
           pushToast("Backup restaurado", "O snapshot anterior foi guardado na lixeira de resets.", "success");
-          trackEvent("import_json_backup", {
-            years: Object.keys(importedState.years).length,
-          });
-          if (shouldCountPlanStart) {
-            incrementPublicStats({ plansStarted: 1 }).catch(() => undefined);
-          }
         } catch (error) {
           setStatusNotice(
-            "Não foi possível importar o backup. Verifique o arquivo JSON."
+            "N\u00e3o foi poss\u00edvel importar o backup. Verifique o arquivo JSON."
           );
-          pushToast("Falha na restauração", "O arquivo JSON não pôde ser interpretado.", "danger");
-          trackEvent("import_json_backup_error");
+          pushToast("Falha na restaura\u00e7\u00e3o", "O arquivo JSON n\u00e3o p\u00f4de ser interpretado.", "danger");
         } finally {
           closeConfirmDialog();
         }
@@ -650,7 +604,7 @@ const DashboardApp = ({ user, onSignOut }) => {
   const resetAllData = () => {
     openConfirmDialog({
       title: "Resetar conta",
-      message: `Os dados serão redefinidos e o planejamento do ano ${currentYear} será recriado vazio. Um snapshot da conta ficará salvo para recuperação.`,
+      message: `Os dados ser\u00e3o redefinidos e o planejamento do ano ${currentYear} ser\u00e1 recriado vazio. Um snapshot da conta ficar\u00e1 salvo para recupera\u00e7\u00e3o.`,
       confirmLabel: "Resetar conta",
       tone: "danger",
       onConfirm: () => {
@@ -676,8 +630,8 @@ const DashboardApp = ({ user, onSignOut }) => {
             },
           };
         });
-        setStatusNotice("Conta resetada para o estado inicial. A nuvem será atualizada.");
-        pushToast("Conta resetada", "O snapshot anterior foi preservado para recuperação.", "warning");
+        setStatusNotice("Conta resetada para o estado inicial. A nuvem ser\u00e1 atualizada.");
+        pushToast("Conta resetada", "O snapshot anterior foi preservado para recupera\u00e7\u00e3o.", "warning");
         appendBackupLog({
           type: "reset_account",
           title: "Conta resetada",
@@ -690,7 +644,6 @@ const DashboardApp = ({ user, onSignOut }) => {
           description: `A conta foi redefinida e o ciclo ${currentYear} foi recriado vazio.`,
           yearKey: currentYear,
         });
-        trackEvent("reset_account");
         closeConfirmDialog();
       },
     });
@@ -718,68 +671,64 @@ const DashboardApp = ({ user, onSignOut }) => {
       },
     }));
     setStatusNotice(`Ano ${pendingYear} criado com a estrutura do ano atual.`);
-    pushToast("Ano criado", `O ciclo ${pendingYear} já está disponível no painel.`, "success");
+    pushToast("Ano criado", `O ciclo ${pendingYear} j\u00e1 est\u00e1 dispon\u00edvel no painel.`, "success");
     appendActivityLog({
       type: "create_year",
       title: "Ano criado",
       description: `O ciclo ${pendingYear} foi criado a partir da estrutura de ${currentYear}.`,
       yearKey: pendingYear,
     });
-    trackEvent("create_year", { year: pendingYear });
-    incrementPublicStats({ activeYearsCreated: 1 }).catch(() => undefined);
   };
 
-  const deleteCurrentYear = () => {
+  const handleDeleteYear = (yearKeyToDelete) => {
     if (availableYears.length <= 1) {
-      setStatusNotice("É preciso manter pelo menos um ano no painel.");
+      setStatusNotice("\u00c9 preciso manter pelo menos um ano no painel.");
       pushToast(
-        "Exclusão indisponível",
-        "Crie outro ciclo antes de remover o único ano restante da conta.",
+        "Exclus\u00e3o indispon\u00edvel",
+        "Crie outro ciclo antes de remover o \u00fanico ano restante da conta.",
         "warning"
       );
       return;
     }
 
     openConfirmDialog({
-      title: `Excluir ano ${currentYear}`,
+      title: `Excluir ano ${yearKeyToDelete}`,
       message:
-        "Este ciclo será removido da lista com todas as metas, aportes e observações vinculadas. A exclusão apaga os dados desse ano da conta.",
+        "Este ciclo ser\u00e1 removido da lista com todas as metas, aportes e observa\u00e7\u00f5es vinculadas. A exclus\u00e3o apaga os dados desse ano da conta.",
       confirmLabel: "Excluir ano",
       tone: "danger",
       onConfirm: () => {
         setAppState((currentState) => {
           const nextYears = { ...currentState.years };
-          delete nextYears[currentYear];
+          delete nextYears[yearKeyToDelete];
 
           return cloneAppState({
             ...currentState,
-            currentYear: getReplacementYearKey(currentYear, nextYears),
             years: nextYears,
             metadata: {
               ...currentState.metadata,
               deletedYears: [
-                currentYear,
+                yearKeyToDelete,
                 ...((currentState.metadata?.deletedYears || []).filter(
-                  (yearKey) => yearKey !== currentYear
+                  (yearKey) => yearKey !== yearKeyToDelete
                 )),
               ].slice(0, 48),
             },
           });
         });
 
-        setStatusNotice(`Ano ${currentYear} removido da conta.`);
+        setStatusNotice(`Ano ${yearKeyToDelete} removido da conta.`);
         pushToast(
-          "Ano excluído",
-          `O ciclo ${currentYear} saiu da lista com todos os dados vinculados.`,
+          "Ano exclu\u00eddo",
+          `O ciclo ${yearKeyToDelete} saiu da lista com todos os dados vinculados.`,
           "warning"
         );
         appendActivityLog({
           type: "delete_year",
-          title: "Ano excluído",
-          description: `O ciclo ${currentYear} foi removido da conta com seus dados associados.`,
-          yearKey: currentYear,
+          title: "Ano exclu\u00eddo",
+          description: `O ciclo ${yearKeyToDelete} foi removido da conta com seus dados associados.`,
+          yearKey: yearKeyToDelete,
         });
-        trackEvent("delete_year", { year: currentYear });
         closeConfirmDialog();
       },
     });
@@ -875,13 +824,21 @@ const DashboardApp = ({ user, onSignOut }) => {
       ...metadata,
       onboardingCompleted: true,
     }));
-    trackEvent("dismiss_onboarding");
   };
 
   const scrollToGoalsManager = () => {
     document
       .getElementById("goals-manager-section")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleChangeCategoryFilter = (nextCategory) => {
+    setCategoryFilter(nextCategory);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollToGoalsManager();
+      });
+    });
   };
 
   const scrollToGovernance = () => {
@@ -958,8 +915,8 @@ const DashboardApp = ({ user, onSignOut }) => {
 
         <QuickActionsBar
           canDeleteYear={availableYears.length > 1}
-          onAddGoal={addGoal}
-          onDeleteYear={deleteCurrentYear}
+          onAddGoal={handleHeroCreateFirstGoal}
+          onDeleteYear={() => handleDeleteYear(currentYear)}
           onOpenGovernance={scrollToGovernance}
         />
 
@@ -973,7 +930,7 @@ const DashboardApp = ({ user, onSignOut }) => {
           onCreateYear={handleCreateYear}
           availableCategories={availableCategories}
           categoryFilter={categoryFilter}
-          onChangeCategory={setCategoryFilter}
+          onChangeCategoryFilter={handleChangeCategoryFilter}
           statusFilter={statusFilter}
           onChangeStatus={setStatusFilter}
         />
@@ -1010,6 +967,8 @@ const DashboardApp = ({ user, onSignOut }) => {
           comparisonYear={comparisonYear}
           comparisonOptions={comparisonOptions}
           onChangeComparisonYear={setComparisonYear}
+          canDeleteYear={availableYears.length > 1}
+          onDeleteYear={handleDeleteYear}
         />
 
         <PlanningIntelligencePanel
@@ -1039,9 +998,6 @@ const DashboardApp = ({ user, onSignOut }) => {
           calculateGoalProjection={(goalId) =>
             dashboardMetrics.goalProjectionById[goalId] ?? null
           }
-          calculateIdealContribution={(goalId) =>
-            planningAlerts.find((entry) => entry.goal.id === goalId)?.idealMonthlyContribution || 0
-          }
           calculateGoalRisk={(goalId) =>
             planningAlerts.find((entry) => entry.goal.id === goalId)?.riskLevel || "healthy"
           }
@@ -1056,7 +1012,9 @@ const DashboardApp = ({ user, onSignOut }) => {
           calculateMonthTotal={(monthIndex) =>
             dashboardMetrics.visibleMonthTotals[monthIndex] || 0
           }
-          calculateGoalTotal={(goalId) => dashboardMetrics.goalTotalsById[goalId] || 0}
+          calculateGoalTotal={(goalId) =>
+            dashboardMetrics.tableGoalTotalsById[goalId] || 0
+          }
           calculateGrandTotal={() => dashboardMetrics.visibleGrandTotal}
         />
 
@@ -1090,15 +1048,6 @@ const App = () => {
     signOutUser,
     cancelAuthLoading,
   } = useAuth();
-  const publicStats = usePublicStats();
-
-  useEffect(() => {
-    trackPageView();
-  }, []);
-
-  useEffect(() => {
-    identifyMonitoringUser(user);
-  }, [user]);
 
   if (isLoading) {
     return (
@@ -1120,7 +1069,6 @@ const App = () => {
         isFirebaseConfigured={isFirebaseConfigured}
         authError={authError}
         isSigningIn={isSigningIn}
-        publicStats={publicStats}
       />
     );
   }
@@ -1129,3 +1077,5 @@ const App = () => {
 };
 
 export default App;
+
+

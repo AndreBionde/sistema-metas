@@ -12,7 +12,7 @@ const PlanningToolbar = ({
   onCreateYear,
   availableCategories,
   categoryFilter,
-  onChangeCategory,
+  onChangeCategoryFilter,
   statusFilter,
   onChangeStatus,
 }) => {
@@ -74,7 +74,7 @@ const PlanningToolbar = ({
           </span>
           <select
             value={categoryFilter}
-            onChange={(event) => onChangeCategory(event.target.value)}
+            onChange={(event) => onChangeCategoryFilter(event.target.value)}
           >
             {availableCategories.map((category) => {
               const categoryLabel =

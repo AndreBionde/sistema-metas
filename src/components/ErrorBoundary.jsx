@@ -1,6 +1,6 @@
 import React from "react";
 import "../styles/ErrorBoundary.css";
-import { captureAppError } from "../services/monitoring";
+import { reportRuntimeError } from "../utils/errors";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,7 +13,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    captureAppError(error, {
+    reportRuntimeError("render_boundary", error, {
       componentStack: errorInfo?.componentStack || "",
     });
   }

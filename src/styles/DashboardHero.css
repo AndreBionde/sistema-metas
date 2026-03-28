@@ -358,6 +358,14 @@
 }
 
 @media (max-width: 640px) {
+  .dashboard-hero-copy {
+    box-shadow: 0 12px 24px -20px rgba(8, 24, 39, 0.18);
+  }
+
+  .dashboard-hero-copy::before {
+    display: none;
+  }
+
   .dashboard-hero-copy,
   .dashboard-hero-spotlight-card,
   .dashboard-hero-empty {
@@ -366,7 +374,7 @@
   }
 
   .dashboard-hero-title {
-    font-size: 1.9rem;
+    font-size: 1.75rem;
   }
 
   .dashboard-hero-cards {
@@ -383,5 +391,10 @@
 
   .dashboard-hero-empty-button {
     width: 100%;
+  }
+
+  .dashboard-hero-card,
+  .dashboard-hero-spotlight-card {
+    box-shadow: 0 12px 24px -20px rgba(8, 24, 39, 0.12);
   }
 }

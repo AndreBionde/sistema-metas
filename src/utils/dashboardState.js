@@ -6,13 +6,13 @@ import {
 } from "../constants/defaultData";
 import {
   calculateActiveGoalsCount,
+  calculateCyclePlannedAnnualTotal,
   calculateCompletionRate,
   calculateFilledMonthsCount,
   calculateGoalProgress,
   calculateGoalTotal,
   calculateGrandTotal,
   calculateMonthlyAverage,
-  calculatePlannedAnnualTotal,
   calculateProjectionMonths,
 } from "./calculations";
 
@@ -131,9 +131,17 @@ export const removeGoalFromPlan = (plan, goalId) => ({
   }),
 });
 
-export const buildDashboardMetrics = ({ goals, monthlyData, filteredGoals }) => {
+export const buildDashboardMetrics = ({
+  goals,
+  monthlyData,
+  filteredGoals,
+}) => {
   const visibleGoalIds = new Set(filteredGoals.map((goal) => String(goal.id)));
   const goalTotalsById = goals.reduce((totals, goal) => {
+    totals[goal.id] = calculateGoalTotal(monthlyData, goal.id);
+    return totals;
+  }, {});
+  const tableGoalTotalsById = goals.reduce((totals, goal) => {
     totals[goal.id] = calculateGoalTotal(monthlyData, goal.id);
     return totals;
   }, {});
@@ -158,6 +166,7 @@ export const buildDashboardMetrics = ({ goals, monthlyData, filteredGoals }) => 
 
   return {
     goalTotalsById,
+    tableGoalTotalsById,
     goalProgressById,
     goalProjectionById,
     visibleMonthTotals,
@@ -167,7 +176,7 @@ export const buildDashboardMetrics = ({ goals, monthlyData, filteredGoals }) => 
     monthlyAverage: calculateMonthlyAverage(monthlyData),
     filledMonthsCount: calculateFilledMonthsCount(monthlyData),
     completionRate: calculateCompletionRate(goals, monthlyData),
-    plannedAnnualTotal: calculatePlannedAnnualTotal(goals),
+    plannedAnnualTotal: calculateCyclePlannedAnnualTotal(goals),
   };
 };
 
